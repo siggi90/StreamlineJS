@@ -7,6 +7,17 @@ app.interpretation = {
 	traverse: function(definition_element) {
 		
 	},
+	call_on_submit: function(on_submit) {
+		var branch = this;
+		for(var x in on_submit) {
+			var callback_item = on_submit[x];
+			var split = callback_item.split("_");
+			var type = split[split.length-1]+"s";
+			var statement = "var element = branch.root.elements."+type+"['"+callback_item+"']";
+			eval(statement);
+			element.operation.load();	
+		}	
+	},
 	loaded_objects: Array(),
 	loaded_object: {
 		new: function() {
@@ -157,7 +168,13 @@ app.interpretation = {
 		}
 		var icon = "";
 		if(typeof page.icon !== 'undefined') {
-			icon = "<div class='logo' style='background-image:url(/images/"+page.title+".png)'></div>";	
+			var icon_value;
+			if(page.icon === true) {
+				icon_value = page.title;
+			} else {
+				icon_value = page.icon;
+			}
+			icon = "<div class='logo' style='background-image:url(/images/"+icon_value+".png)'></div>";	
 		}
 		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title' style='"+style+"'>"+page.title+"</div><div class='menu_top_container'></div></div>");
 		if(frame == 'body') {
@@ -178,6 +195,19 @@ app.interpretation = {
 					style_requirment = "display:none;";	
 				}
 				switch(content_item.type) {
+					case 'file_upload':
+						$container.append('<form action="upload.php" class="dropzone"></form>');
+						//Dropzone.discover();
+						var myDropzone = new Dropzone(".dropzone");
+						if(typeof content_item.on_submit !== 'undefined') {
+							
+							myDropzone.on("queuecomplete", function(file) {
+								branch.call_on_submit(content_item.on_submit);
+							});
+							
+						}
+						branch.loaded_objects[page.id].loaded();
+						break;
 					case "carousel":
 						$container.append("<div class='carousel_wrap'><div class='carousel "+content_item.id+"_carousel' style='height:"+content_item.height+";' id='"+content_item.id+"_carousel'></div><div class='"+content_item.id+"_carousel_bulbs carousel_bulbs'></div></div>");
 						var $carousel = $container.find('#'+content_item.id+'_carousel').first();
@@ -334,20 +364,58 @@ app.interpretation = {
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'menu':
-						content_item.content_parsed = branch.get_pages_data(content_item.content);
-						//var content_item_copy = branch.root.functions.copy_object(content_item);
-						$container.find('.menu_top_container').first().append("<div class='menu_wrap'><div class='menu_"+content_item.position+" "+content_item.id+"_menu'></div></div>");
-						var $menu_container = $container.find('.'+content_item.id+'_menu').first();
-						for(var i in content_item.content_parsed) {
-							var item = content_item.content_parsed[i];
-							$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+item.title+"</a></div>");	
+						//if(!content_item.content.isArray()) {
+						var parse_menu = function(fetched) {
+							var custom_pages = Array();
+							var set_pages = Array();
+							if(!fetched) {
+								set_pages = content_item.content;	
+							} else {
+								for(var i in content_item.content) {
+									if(typeof content_item.content[i].page === 'undefined') {
+										set_pages.push(content_item.content[i].id);	
+									} else {
+										custom_pages.push(content_item.content[i]);	
+									}
+								}
+							}
+							content_item.content_parsed = branch.get_pages_data(set_pages);
+							//var content_item_copy = branch.root.functions.copy_object(content_item);
+							$container.find('.menu_top_container').first().append("<div class='menu_wrap'><div class='menu_"+content_item.position+" "+content_item.id+"_menu'></div></div>");
+							var $menu_container = $container.find('.'+content_item.id+'_menu').first();
+							var menu_buttons_html = Array();
+							for(var i in content_item.content_parsed) {
+								var item = content_item.content_parsed[i];
+								$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+item.title+"</a></div>");	
+							}
+							
+							var content = content_item.content_parsed;
+							$menu_container.children().each(function(index) {
+								var menu_data = content[index];
+								$(this).find('a').first().attr('href', branch.root.navigation.generate_href(menu_data.id, null, null, null, content_item.target));
+							});
+							
+							for(var i in custom_pages) {
+								var item = custom_pages[i];
+								$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+item.title+"</a></div>");	
+							}
+							/*for(var i in menu_buttons_html) {
+								alert('append');
+								$menu_container.append(menu_buttons_html[i]);	
+							}*/
+							
+							branch.loaded_objects[page.id].loaded();
+						};
+						if(content_item.content === 'fetch') {
+							$.post(branch.root.actions, {
+								'action': 'get_menu_'+content_item.id
+							}, function(data) {
+								content_item.content = data;
+								parse_menu(true);
+							}, "json");
+						} else {
+							parse_menu(false);	
 						}
-						var content = content_item.content_parsed;
-						$menu_container.children().each(function(index) {
-							var menu_data = content[index];
-							$(this).find('a').first().attr('href', branch.root.navigation.generate_href(menu_data.id, null, null, null, content_item.target));
-						});
-						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'frame':
 						$container.append("<div class='frame' id='"+content_item.id+"_frame'></div>");
@@ -381,6 +449,10 @@ app.interpretation = {
 						var $list_container = $list;
 						var $list_load_button = $list_container.find('.list_load_button').first();
 						$list = $list.find('.list_content');
+						var image_root = "images";
+						if(typeof content_item.image_location !== 'undefined') {
+							image_root = content_item.image_location;	
+						}
 						var list_operation = {
 							offset: 0,
 							$list: $list,
@@ -426,6 +498,11 @@ app.interpretation = {
 											row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
 											delete data[x].title;
 										}
+										if(typeof data[x].image !== 'undefined') {
+											//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
+											row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' width='100%' /></a>";
+											delete data[x].image;
+										}
 										if(typeof data[x].content !== 'undefined') {
 											row_item += "<div class='content list_element line_clamp' style='padding-bottom: 20px;'>"+data[x].content+"</div>";
 											delete data[x].content;
@@ -456,7 +533,7 @@ app.interpretation = {
 										row_item += "</div>";//</div>";
 										$list_values_container.append(row_item);
 									}
-									$.post(branch.root.actions, {
+									/*$.post(branch.root.actions, {
 										action: content_item.id+"_list_count"	
 									}, function(data) {
 										if(data == self.offset) {
@@ -464,7 +541,7 @@ app.interpretation = {
 										} else {
 											$list_load_button.show();	
 										}
-									});
+									});*/
 									
 									
 									if(typeof content_item.date_columns !== 'undefined') {
@@ -1043,6 +1120,9 @@ app.interpretation = {
 								var $input_extra;
 								(function(form_element, form_object) {
 									switch(form_element.type) {
+										case 'date':
+											$form.append("<div class='form_element'><input type='date' id='"+form_element.id+"' class='form_input' value='' /></div>");
+											break;
 										case 'radio':
 											var append_value = "<div class='form_element flex'><div class='radio_buttons form_input' id='"+form_element.id+"'>";
 											var counter = 0;
@@ -1390,6 +1470,20 @@ app.interpretation = {
 									});
 									$form.find('input[type=hidden]').val("-1");*/
 									form_object.operation.load();
+								});
+							}
+							if(typeof content_item.delete !== 'undefined') {
+								$form_buttons.append("<button class='delete'>Delete</button>");
+								$form_buttons.find('button.delete').first().click(function() {
+									var post_data = {
+										action: 'delete_'+content_item.id,
+										id: $form.find('#id').first().val()
+									};
+									$.post(branch.root.actions, post_data, function(data) {
+										if(typeof content_item.on_delete_navigate !== 'undefined') {
+											branch.root.navigation.navigate_to(content_item.on_delete_navigate);
+										}
+									});
 								});
 							}
 							branch.root.assign_root_object(form_object);
@@ -1809,6 +1903,11 @@ app.interpretation = {
 						});
 					});
 				});
+			},
+			date_picker: function($input) {
+				/*$input.focus(function() {
+					
+				});*/
 			},
 			date_format: function(datetime) {
 				var datetime = datetime.split(" ");

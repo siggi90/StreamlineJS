@@ -88,22 +88,25 @@ app.navigation = {
 						branch.root.interpretation.render_page(page_object, frame, $frame, callback, get_data);
 					}
 				}
-				if(typeof page_object.user_access !== 'undefined' && page_object.user_access != 'everyone') {
-					$.post(branch.root.actions, {
-						action: '_user_group_member',
-						groupd_name: page_object.user_access	
-					}, function(data) {
-						if(data == 1) {
-							page_render();	
-						} else {
-							branch.root.interpretation.view.pop_up.display("You do not have access to this page.", "fadeout");
-						}
-					});
+				if(typeof page_object.user_access !== 'undefined' && page_object.user_access !== 'user' && page_object.user_access !== 'everyone') {
+					if(branch.root.user_id == -1) {
+						branch.access_granted = false;
+					} else {
+						$.post(branch.root.actions, {
+							action: '_user_group_member',
+							groupd_name: page_object.user_access	
+						}, function(data) {
+							if(data == 1) {
+								page_render();	
+							} else {
+								branch.root.interpretation.view.pop_up.display("You do not have access to this page.", "fadeout");
+							}
+						});
+					}
 				} else {
 					page_render();	
-					if(typeof page_object.user_access !== 'undefined' && page_object.user_access == 'everyone') {
-						//
-					} else {
+					if(typeof page_object.user_access !== 'undefined' && page_object.user_access == 'user') {
+						//alert(branch.root.user_id);
 						if(branch.root.user_id == -1) {
 							branch.access_granted = false;
 						}
@@ -123,11 +126,11 @@ app.navigation = {
 			}
 			//alert(branch.root.interpretation.bottom_frame.__default_page);
 		} else {*/
-			if(branch.access_granted) {
-				branch.root.user_menu.remove_login_overlay();
-			} else {
-				branch.root.user_menu.display_login_overlay();	
-			}
+		if(branch.access_granted) {
+			branch.root.user_menu.remove_login_overlay();
+		} else {
+			branch.root.user_menu.display_login_overlay();	
+		}
 		if(!this.search_initialized) {
 			branch.root.search.init();	
 			this.search_initialized = true;
@@ -284,9 +287,17 @@ app.navigation = {
 		return result;
 	},
 	navigate_to: function(page_id, send_data, return_value) {
+		if(typeof send_data === 'undefined') {
+			send_data = {
+				
+			};
+		}
 		var last_hash_split = this.hash_value.split("/");
 		last_hash_split[last_hash_split.length-1] = page_id;
-		last_hash_split[last_hash_split.length-1] += '#';
+		if(send_data.length > 0) {
+			last_hash_split[last_hash_split.length-1] += '#';
+		}
+		
 		
 		var counter = 0;
 		if(typeof send_data.id !== 'undefined') {
@@ -299,6 +310,7 @@ app.navigation = {
 			last_hash_split[last_hash_split.length-1] += x+"="+send_data[x];
 			counter++;	
 		}
+		
 		var new_hash_value = last_hash_split.join("/");
 		if(typeof return_value === 'undefined') {
 			this.set_hash(new_hash_value);

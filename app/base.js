@@ -928,6 +928,7 @@ var base = {
 				if(data == "-1") {
 					$('.logged_in_options').hide();
 					$('.logged_out_options').show();
+					//branch.display_login_overlay();
 					/*$('.overlay_black').css({
 						'opacity': '0',
 						'display': 'block'
@@ -947,7 +948,7 @@ var base = {
 				} else {	
 					$('.logged_in_options').show();
 					$('.logged_out_options').hide();
-					branch.remove_login_overlay();
+					//branch.remove_login_overlay();
 					if($('.console').length > 0) {
 						$('.console').addClass('console_back');
 					}
