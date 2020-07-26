@@ -277,9 +277,9 @@ app.navigation = {
 			}
 			var counter = 0;
 			for(var x in get_data) {
-				if(counter > 0) {
+				//if(counter > 0) {
 					result += "&";	
-				}
+				//}
 				result += x+"="+get_data[x];
 				counter++;	
 			}

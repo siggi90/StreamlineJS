@@ -116,6 +116,9 @@ app.interpretation = {
 				document.title = page_data.title;	
 			}
 		}
+		if(typeof page.user_menu !== 'undefined' && page.user_menu === false) {
+			$('.user_info').hide();	
+		}
 		this.animation = animation;
 		this.current_page = page;
 		if(typeof callback !== 'undefined') {
@@ -125,14 +128,16 @@ app.interpretation = {
 		}
 		var branch = this;
 		var $container;
+		var frame_id;
 		if(typeof $frame !== 'undefined') {
 			if(page.id == 'article') {
 				//$frame.append("testetestest");
 			}
 			$container = $frame;
-			var frame_id = $frame.attr('id').split("_frame")[0];
+			frame_id = $frame.attr('id').split("_frame")[0];
 			this.current_render_frame = this.root.eval_object_path(this.root.find("elements.frames", frame_id), "this");
 		} else {
+			frame_id = frame;
 			this.current_render_frame = this.root.eval_object_path(this.root.find("elements.frames", frame), "this");
 			$container = $(".body_wrap");
 			if(typeof frame !== 'undefined' && frame != 'index') {
@@ -176,7 +181,7 @@ app.interpretation = {
 			}
 			icon = "<div class='logo' style='background-image:url(/images/"+icon_value+".png)'></div>";	
 		}
-		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title' style='"+style+"'>"+page.title+"</div><div class='menu_top_container'></div></div>");
+		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title main_title' style='"+style+"'>"+page.title+"</div><div class='menu_top_container'></div></div>");
 		if(frame == 'body') {
 			$container.find('.title').first().show();	
 		}
@@ -195,6 +200,41 @@ app.interpretation = {
 					style_requirment = "display:none;";	
 				}
 				switch(content_item.type) {
+					case 'options':
+						$container.append("<div class='menu_wrap menu_options'><div class='menu_top' id='"+content_item.id+"_options'></div></div>");
+						var target_object;
+						if(typeof content_item.target_object !== 'undefined') {
+							target_object = branch.root.elements.find_element_object(content_item.target_object);
+						}
+						var $options = $container.find('#'+content_item.id+'_options').first();
+						if(content_item.content == 'fetch') {
+							$.post(branch.root.actions, {
+								'action': content_item.id+'_options'
+							}, function(data) {
+								for(var i in data) {
+									var item = data[i];
+									$options.append("<div class='menu_button' id='"+data[i].id+"_option'><a>"+data[i].value+"</a></div>");	
+									var $option = $options.find('#'+data[i].id+'_option').first();
+									var post_data = {};
+									for(var y in content_item.load_mask) {
+										post_data[content_item.load_mask[y]] = data[i][y];	
+									}
+									
+									if(typeof content_item.target_object !== 'undefined') {
+										$option.click(function() {
+											target_object.load('', post_data);
+										});
+									} else if(typeof content_item.target !== 'undefined') {
+										if(content_item.target == 'self') {
+											var href = branch.root.navigation.generate_href(page.id, null, null, post_data, frame_id);
+											$option.find('a').first().attr('href', href);
+										}
+									}
+								}
+							}, "json");
+						}
+						branch.loaded_objects[page.id].loaded();
+						break;
 					case 'file_upload':
 						$container.append('<form action="upload.php" class="dropzone"></form>');
 						//Dropzone.discover();
@@ -364,7 +404,6 @@ app.interpretation = {
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'menu':
-						//if(!content_item.content.isArray()) {
 						var parse_menu = function(fetched) {
 							var custom_pages = Array();
 							var set_pages = Array();
@@ -380,7 +419,6 @@ app.interpretation = {
 								}
 							}
 							content_item.content_parsed = branch.get_pages_data(set_pages);
-							//var content_item_copy = branch.root.functions.copy_object(content_item);
 							$container.find('.menu_top_container').first().append("<div class='menu_wrap'><div class='menu_"+content_item.position+" "+content_item.id+"_menu'></div></div>");
 							var $menu_container = $container.find('.'+content_item.id+'_menu').first();
 							var menu_buttons_html = Array();
@@ -397,7 +435,10 @@ app.interpretation = {
 							
 							for(var i in custom_pages) {
 								var item = custom_pages[i];
-								$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+item.title+"</a></div>");	
+								$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+item.title+"</a></div>");
+								$menu_container.find('.'+item.id+'_button > a').first().attr('href', branch.root.navigation.generate_href(item.page, null, null, {
+									id: item.id	
+								}, content_item.target));
 							}
 							/*for(var i in menu_buttons_html) {
 								alert('append');
@@ -456,7 +497,7 @@ app.interpretation = {
 						var list_operation = {
 							offset: 0,
 							$list: $list,
-							load: function(search_term) {
+							load: function(search_term, send_data) {
 								var self = this;
 								/*if(typeof no_refresh === 'undefined') {
 								}*/
@@ -475,10 +516,15 @@ app.interpretation = {
 									search_term: search_term,
 									offset: self.offset	
 								};
-								if(typeof content_item.post_data !== 'undefined') {
-									for(var x in content_item.post_data) {
-										
+								if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
+									for(var x in content_item.post_data) {										
 										var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
+										eval(statement);	
+									}
+								}
+								if(typeof send_data !== 'undefined') {
+									for(var x in send_data) {
+										var statement = "post_data."+x+" = page_data."+send_data[x];
 										eval(statement);	
 									}
 								}
@@ -524,24 +570,34 @@ app.interpretation = {
 											if(li_information_count > 0) {
 												//row_item += "<div class='list_element column_split'>|</div>";	
 											}
-											//if(y != "title" && y != "content" && y != 'id') {
-												row_item += "<div class='list_element_wrap'><div class='caption'>"+y+"</div><div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
-												li_information_count++;
-											//}
+											var column_title = y;
+											if(typeof content_item.columns !== 'undefined') {
+												if(typeof content_item.columns[y] !== 'undefined') {
+													column_title = content_item.columns[y];	
+												}
+											}
+											row_item += "<div class='list_element_wrap'><div class='caption'>"+column_title+"</div><div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
+											li_information_count++;
 											
 										}
 										row_item += "</div>";//</div>";
 										$list_values_container.append(row_item);
 									}
-									/*$.post(branch.root.actions, {
-										action: content_item.id+"_list_count"	
-									}, function(data) {
-										if(data == self.offset) {
-											$list_load_button.hide();	
+									if(typeof content_item.show_all_items !== 'undefined') {
+										if(content_item.show_all_items == true) {
+											$.post(branch.root.actions, {
+												action: content_item.id+"_list_count"	
+											}, function(data) {
+												if(data == self.offset) {
+													$list_load_button.hide();	
+												} else {
+													$list_load_button.show();	
+												}
+											});
 										} else {
-											$list_load_button.show();	
+											$list_load_button.hide();	
 										}
-									});*/
+									}
 									
 									
 									if(typeof content_item.date_columns !== 'undefined') {
@@ -589,8 +645,8 @@ app.interpretation = {
 						
 						if(typeof content_item.search !== 'undefined') {
 							$list.parent().prepend("<div class='search_bar'><input type='text' class='search' placeholder='search' /></div>");
-							//if(content_item.search == 'filter') {
-								$search = $list.parent().find('.search_bar').find('.search').first();
+							$search = $list.parent().find('.search_bar').find('.search').first();
+							if(content_item.search != 'filter') {
 								$search.keyup(function(e) {
 									var search_term = $(this).val().toLowerCase().trim();
 									if(search_term != "") {
@@ -609,9 +665,24 @@ app.interpretation = {
 										list_operation.load();
 									}
 								});
-							/*} else if(content_item.search == 'search') {
-									
-							}*/
+							} else {
+								$search.keyup(function(e) {
+									var search_term = $(this).val().toLowerCase().trim();
+									if(search_term != "") {
+										$list.find('.list_item').each(function() {
+											if($(this).text().toLowerCase().indexOf(search_term) != -1) {
+												$(this).show();	
+											} else {
+												$(this).hide();	
+											}
+										});						
+									} else {
+										$list.find('.list_item').each(function() {
+											$(this).show();
+										});				
+									}
+								});	
+							}
 						}
 						
 						/*$(window).scroll(function() {
@@ -1007,7 +1078,10 @@ app.interpretation = {
 									load: function(data) {
 										var self = this;
 										$form.find('.form_input').each(function() {
-											if(!$(this).hasClass('ignore_reset')) {
+											var id = $(this).attr('id');
+											if($(this).hasClass('rich_text')) {
+												tinyMCE.get(id).setContent("");
+											} else if(!$(this).hasClass('ignore_reset')) {
 												$(this).val("");
 											}
 										});
@@ -1018,7 +1092,13 @@ app.interpretation = {
 										});
 										if(typeof data !== 'undefined') {
 											for(var x in data) {
-												self.root.$element.find('#'+x).val(data[x]);	
+												var $set_element = self.root.$element.find('#'+x);
+												if($set_element.hasClass('rich_text')) {
+													var id = $set_element.attr('id');
+													tinyMCE.get(id).setContent(data[x]);
+												} else {
+													$set_element.val(data[x]);	
+												}
 											}
 										}
 										
@@ -1182,9 +1262,16 @@ app.interpretation = {
 											}
 											break;
 										case 'textarea':
+											if(typeof form_element.rich_text !== 'undefined' && form_element.rich_text == true) {
+												$form.append("<div class='title small'>"+form_element.placeholder+"</div>");
+											}
 											$form.append("<div class='form_element'><textarea id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"'></textarea></div>");
 											var $textarea = $form.find('#'+form_element.id).first();
 											$input = $textarea;
+											if(typeof form_element.rich_text !== 'undefined' && form_element.rich_text == true) {
+												$input.addClass('rich_text');
+												$input.parent().addClass('rich_text');
+											}
 											break;
 										case 'tags':
 											$form.append("<div class='form_element'><input type='text' id='"+form_element.id+"' class='form_input tags_input' placeholder='"+form_element.placeholder+"' /></div>");
@@ -1390,7 +1477,7 @@ app.interpretation = {
 									}
 									$form.find('.form_input').each(function() {
 										//if(this.tagName == 'input' && this.type == 'radio') {
-										if($(this).hasClass('radio_buttons')) {
+										if($(this).hasClass('radio_buttons') || $(this).hasClass('rich_text')) {
 											
 										} else {
 											if($(this).hasClass('invalid')) {
@@ -1406,7 +1493,7 @@ app.interpretation = {
 										return false;
 									}
 									$form.find('.form_input').each(function() {
-										if(!$(this).hasClass('pseudo_value') && !$(this).hasClass('ignore_value') && !($(this).hasClass('unrequired_on_edit') && $(this).val() == "")) {
+										if(!$(this).hasClass('rich_text') && !$(this).hasClass('pseudo_value') && !$(this).hasClass('ignore_value') && !($(this).hasClass('unrequired_on_edit') && $(this).val() == "")) {
 											var id = $(this).attr('id');
 											/*if(this.tagName.toLowerCase() == 'select') {
 												id += "_id";	
@@ -1419,6 +1506,11 @@ app.interpretation = {
 											}
 											var statement = "submit_data."+id+" = value;";
 											eval(statement);
+										} else if($(this).hasClass('rich_text')) {
+											var id = $(this).attr('id');
+											var value = tinyMCE.get(id).getContent();
+											var statement = "submit_data."+id+" = value;";
+											eval(statement);	
 										}
 									});
 									$.post(branch.root.actions, submit_data, function(data) {
@@ -1497,6 +1589,9 @@ app.interpretation = {
 								}
 							});
 							//form_object.operation.load();
+							if(typeof tinymce !== 'undefined') {
+								tinymce.init({ selector:'textarea.rich_text' });	
+							}
 							branch.loaded_objects[page.id].loaded();
 						}(content_item));
 						break;

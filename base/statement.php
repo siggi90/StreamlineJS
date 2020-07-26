@@ -99,7 +99,7 @@ class statement {
 					}/* else {
 						$continue = false;	
 					}*/
-				} else if($row['COLUMN_NAME'] == 'created' && !isset($values['id'])) {
+				} else if($row['COLUMN_NAME'] == 'created' && !isset($v['created'])) {
 					if(!isset($v['id'])) {
 						$values['created'] = 'NOW()';	
 					}

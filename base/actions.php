@@ -29,6 +29,8 @@
 		
 		//echo $app->test();
 		//var_dump($_POST);
+		
+		$connection = mysqli_connect('localhost', 'root', '');
 
 		function json($var) {
 			if(is_array($var)) {
@@ -42,13 +44,13 @@
 			return $var;
 		}
 		
-		function clean_var($var) {
+		function clean_var($var, $connection) {
 			if(is_array($var)) {
 				foreach($var as $key => $value) {
-					$var[$key] = clean_var($var[$key]);
+					$var[$key] = clean_var($var[$key], $connection);
 				}
 			} else {
-				return mysqli_escape_string(mysqli_connect('localhost', 'root', ''), $var);	
+				return mysqli_escape_string($connection, $var);	
 				//return $var;
 			}
 			return $var;
@@ -57,7 +59,7 @@
 
 		foreach($_POST as $key => $value) {
 			$_POST[$key] = json($_POST[$key]);
-			$_POST[$key] = clean_var($_POST[$key]);
+			$_POST[$key] = clean_var($_POST[$key], $connection);
 			//echo "clean: ".$_POST[$key]."<br>";	
 		}
 		

@@ -27,6 +27,7 @@ class base {
 		} else {
 			$this->user_id = -1;
 			$_SESSION['user_id'] = -1;	
+			unset($_SESSION['user_id']);
 		}
 		$this->statement = statement::init($this->sql, $app_id, $this->user_id);
 	}

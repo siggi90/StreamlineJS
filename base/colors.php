@@ -2,6 +2,12 @@
 
 class colors {
 	
+	private $sql;
+	
+	function __construct($sql=NULL) {
+		$this->sql = $sql;	
+	}
+	
 	public function get_colors($html=false, $step_size=16) {
 		$colors = array();
 		//for($c_val = 0; $c_val < 30; $c_val += 5) { //10
@@ -38,7 +44,12 @@ class colors {
 		//background-color:hsl(9, 100%, 64%);
 		array_pop($colors);
 		return $colors;
-	}	
+	}
+	
+	public function get_color_values() {
+		$query = "SELECT * FROM app.colors";
+		return $this->sql->get_rows($query, 1);	
+	}
 	
 	function rgb($h, $s, $l){
         $r = $l;
