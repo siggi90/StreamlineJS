@@ -201,6 +201,19 @@ app.interpretation = {
 					style_requirment = "display:none;";	
 				}
 				switch(content_item.type) {
+					case "image":
+						var id = content_item.id;
+						var value;
+						if(typeof content_item.content !== 'undefined') {
+							value = content_item.content;
+						} else {
+							var statement = "value = page_data."+id+";";
+							eval(statement);
+						}
+						$container.append("<div class='image' id='"+content_item.id+"'><img src='"+content_item.image_location+'/'+value+"' class='max_original_size' /></div>");
+						var $content_item_element = $container.find('.image#'+content_item.id).first();
+						branch.loaded_objects[page.id].loaded();
+						break;
 					case 'options':
 						$container.append("<div class='menu_wrap menu_options'><div class='menu_top' id='"+content_item.id+"_options'></div></div>");
 						var target_object;
@@ -238,18 +251,13 @@ app.interpretation = {
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'file_upload':
-						var action = "upload.php";
+						var action = "upload.php?";
 						if(typeof content_item.form_action !== 'undefined') {
 							action = content_item.form_action;
 						}
 						$container.append('<form action="'+action+'" id="'+content_item.id+'_file_upload" class="dropzone"></form>');
 						//Dropzone.discover();
-						var myDropzone = new Dropzone(".dropzone");
-						if(typeof content_item.on_submit !== 'undefined') {
-							myDropzone.on("queuecomplete", function(file) {
-								branch.call_on_submit(content_item.on_submit);
-							});
-						}
+						var _dropzone = new Dropzone(".dropzone");
 						$upload_form = $container.find('#'+content_item.id+'_file_upload').first();
 						if(typeof content_item.submit_mask !== 'undefined') {
 							var post_data = {};
@@ -260,7 +268,31 @@ app.interpretation = {
 									var item_object = item_split[0];
 									var item_property = item_split[1];	
 									var target_object = branch.root.elements.find_element_object(item_object);
-									var value = target_object.$element.find('#'+item_property).val();
+									var $target_element = target_object.$element.find('#'+item_property);
+									
+									$target_element.change(function() {
+										var post_data = {};
+										for(var y in content_item.submit_mask) {
+											var item = content_item.submit_mask[y];
+											if(item.indexOf('.') !== -1) {
+												var item_split = item.split(".");
+												var item_object = item_split[0];
+												var item_property = item_split[1];	
+												var target_object = branch.root.elements.find_element_object(item_object);
+												var $target_element = target_object.$element.find('#'+item_property);															
+												var value = $target_element.val();
+												post_data[y] = value;
+											}
+										}
+										var action_string = action;
+										for(var i in post_data) {
+											action_string += "&"+i+"="+post_data[i];	
+										}
+										$upload_form.attr('action', action_string);
+										_dropzone.options.url = action_string;
+									});
+									
+									var value = $target_element.val();
 									post_data[i] = value;
 								} else {
 									post_data[i] = page_data[item];	
@@ -268,9 +300,15 @@ app.interpretation = {
 							}
 							var action_string = action;
 							for(var i in post_data) {
-								action_string += "6"+i+"="+post_data;	
+								action_string += "&"+i+"="+post_data[i];	
 							}
 							$upload_form.attr('action', action_string);
+							_dropzone.options.url = action_string;
+						}
+						if(typeof content_item.on_submit !== 'undefined') {
+							_dropzone.on("queuecomplete", function(file) {
+								branch.call_on_submit(content_item.on_submit);
+							});
 						}
 						$element = $upload_form;
 						branch.loaded_objects[page.id].loaded();
@@ -573,7 +611,7 @@ app.interpretation = {
 										}
 										if(typeof data[x].image !== 'undefined') {
 											//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
-											row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' width='100%' /></a>";
+											row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
 											delete data[x].image;
 										}
 										if(typeof data[x].content !== 'undefined') {
@@ -1151,7 +1189,7 @@ app.interpretation = {
 											};
 											if(typeof content_item.on_load_load_mask !== 'undefined') {
 												for(var x in content_item.on_load_load_mask) {
-													send_data[content_item.on_load_load_mask[x]] = data[x];		
+													send_data[content_item.on_load_load_mask[x]] = data[x];
 												}
 											}
 											callback_object.operation.load(send_data);
