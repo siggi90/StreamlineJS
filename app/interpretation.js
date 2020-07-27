@@ -191,6 +191,7 @@ app.interpretation = {
 		this.loaded_object.render_completed_count = page.content.length;
 		this.loaded_object.new();
 		var content = page.content;
+		var $element;
 		for(var x in content) {
 			var content_item = content[x];
 			(function(content_item){
@@ -233,19 +234,45 @@ app.interpretation = {
 								}
 							}, "json");
 						}
+						$element = $options;
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'file_upload':
-						$container.append('<form action="upload.php" class="dropzone"></form>');
+						var action = "upload.php";
+						if(typeof content_item.form_action !== 'undefined') {
+							action = content_item.form_action;
+						}
+						$container.append('<form action="'+action+'" id="'+content_item.id+'_file_upload" class="dropzone"></form>');
 						//Dropzone.discover();
 						var myDropzone = new Dropzone(".dropzone");
 						if(typeof content_item.on_submit !== 'undefined') {
-							
 							myDropzone.on("queuecomplete", function(file) {
 								branch.call_on_submit(content_item.on_submit);
 							});
-							
 						}
+						$upload_form = $container.find('#'+content_item.id+'_file_upload').first();
+						if(typeof content_item.submit_mask !== 'undefined') {
+							var post_data = {};
+							for(var i in content_item.submit_mask) {
+								var item = content_item.submit_mask[i];
+								if(item.indexOf('.') !== -1) {
+									var item_split = item.split(".");
+									var item_object = item_split[0];
+									var item_property = item_split[1];	
+									var target_object = branch.root.elements.find_element_object(item_object);
+									var value = target_object.$element.find('#'+item_property).val();
+									post_data[i] = value;
+								} else {
+									post_data[i] = page_data[item];	
+								}
+							}
+							var action_string = action;
+							for(var i in post_data) {
+								action_string += "6"+i+"="+post_data;	
+							}
+							$upload_form.attr('action', action_string);
+						}
+						$element = $upload_form;
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case "carousel":
@@ -1082,12 +1109,12 @@ app.interpretation = {
 											if($(this).hasClass('rich_text')) {
 												tinyMCE.get(id).setContent("");
 											} else if(!$(this).hasClass('ignore_reset')) {
-												$(this).val("");
+												$(this).val("").trigger('change');
 											}
 										});
 										$form.find('input[type=hidden]').each(function() {
 											if(!$(this).hasClass('ignore_reset')) {
-												$(this).val("-1");
+												$(this).val("-1").trigger('change');
 											}
 										});
 										if(typeof data !== 'undefined') {
@@ -1097,7 +1124,7 @@ app.interpretation = {
 													var id = $set_element.attr('id');
 													tinyMCE.get(id).setContent(data[x]);
 												} else {
-													$set_element.val(data[x]);	
+													$set_element.val(data[x]).trigger('change');	
 												}
 											}
 										}
@@ -1417,6 +1444,9 @@ app.interpretation = {
 									}
 									if(typeof form_element.ignore_reset !== 'undefined' && form_element.ignore_reset == true) {
 										$input.addClass('ignore_reset');	
+									}
+									if(typeof form_element.optional_field !== 'undefined') {
+										$input.addClass('optional_field');	
 									}
 									if(typeof form_element.required_on_edit !== 'undefined' && form_element.required_on_edit == false) {
 										$input.addClass('unrequired_on_edit');
@@ -1780,10 +1810,18 @@ app.interpretation = {
 									} else {
 										linked_value = $(this).val();
 									}
-									if(linked_value == dependency.value) {
-										$input.show();	
+									if(dependency.value == "set") {
+										if(linked_value != "-1") {
+											$element.show();	
+										} else {
+											$element.hide();	
+										}
 									} else {
-										$input.hide();	
+										if(linked_value == dependency.value) {
+											$element.show();	
+										} else {
+											$element.hide();	
+										}
 									}
 								}).trigger('change');
 							}
