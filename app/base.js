@@ -749,7 +749,7 @@ var base = {
 				$('#user_name.user_name').html(data);
 			});
 		},
-		init: function() {
+		init: function(callback) {
 			var branch = this;
 			$('#body').click(function() {
 				$('.console').addClass('console_back');
@@ -954,6 +954,7 @@ var base = {
 					}
 					branch.get_username();
 				}
+				callback();
 			});
 		},
 		remove_in_progress: false,

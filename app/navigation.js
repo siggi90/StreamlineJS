@@ -9,7 +9,7 @@ app.navigation = {
 		if(window.location.hash == "") {
 			if(typeof branch.root.definition.routes !== 'undefined') {
 				if(typeof branch.root.definition.routes.default_route !== 'undefined') {
-					if(branch.root.user_id == "-1") {
+					if(branch.root.user_id == "-1" || typeof branch.root.user_id === 'undefined') {
 						set_hash_value = "#"+branch.root.definition.routes.default_route.everyone;	
 					} else {
 						set_hash_value = "#"+branch.root.definition.routes.default_route.user;
@@ -99,6 +99,7 @@ app.navigation = {
 							if(data == 1) {
 								page_render();	
 							} else {
+								//branch.access_granted = false;
 								branch.root.interpretation.view.pop_up.display("You do not have access to this page.", "fadeout");
 							}
 						});
@@ -323,10 +324,16 @@ app.navigation = {
 			return this.find_frame_sub(depth, $('.body_wrap'));
 		},
 		find_frame_sub: function(depth, $parent) {
+			var branch = this;
 			$parent = $parent.find('.frame').first();
 			//alert(depth+" - "+$parent.attr('id'));
 			if($parent.length == 0) {
-				alert('no frame');	
+				var set_hash_value = "#";	
+				location.hash = set_hash_value;
+				window.location.reload();
+				return;
+				
+				//alert('no frame');	
 			}
 			if(depth == 0) {
 				return $parent;	
