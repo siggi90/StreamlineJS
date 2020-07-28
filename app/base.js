@@ -2,9 +2,7 @@ var base = {
 	obj_id: 'root',
 	user_id: "-1",
 	actions: "actions.php",
-	test: function() {
-		alert('test');
-	},
+	language: 0,
 	excluded_properties: Array(
 		'inherit',
 		'parent',

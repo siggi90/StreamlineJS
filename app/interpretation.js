@@ -115,16 +115,17 @@ app.interpretation = {
 		if(typeof page_data !== 'undefined') {
 			if(typeof page_data.title !== 'undefined') {
 				document.title = page_data.title;	
+				page.title = page_data.title;
 			}
 		}
-		if(typeof page.title_fetch !== 'undefined' && page.title_fetch == true) {
+		/*if(typeof page.title_fetch !== 'undefined' && page.title_fetch == true) {
 			$.post(this.root.actions, {
 				'action': 'get_title'
 			}, function(data) {
 				document.title = data;
 				$('#'+page.id+' .main_title').first().html(data);
 			});
-		}
+		}*/
 		if(typeof page.user_menu !== 'undefined' && page.user_menu === false) {
 			$('.user_info').hide();	
 		}
@@ -189,7 +190,7 @@ app.interpretation = {
 			}
 			icon = "<div class='logo' style='background-image:url(/images/"+icon_value+".png)'></div>";	
 		}
-		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title main_title' style='"+style+"'>"+page.title+"</div><div class='menu_top_container'></div></div>");
+		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title main_title' style='"+style+"'>"+page.title+"</div><div class='sub_main_title'>"+page.title+"</div><div class='menu_top_container'></div></div>");
 		var $title_element = $('#'+page.id+' .main_title').first();
 		var $logo_element = $('#'+page.id+' .logo').first();
 		if(typeof page.title_link !== 'undefined') {
@@ -505,7 +506,13 @@ app.interpretation = {
 							var menu_buttons_html = Array();
 							for(var i in content_item.content_parsed) {
 								var item = content_item.content_parsed[i];
-								$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+item.title+"</a></div>");	
+								var title = item.title;
+								if(branch.root.language != 0) {
+									var suffix = parseInt(branch.root.language)+1;
+									suffix = "_"+suffix;
+									title = item["title"+suffix];
+								}
+								$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+title+"</a></div>");	
 							}
 							
 							var content = content_item.content_parsed;
@@ -630,8 +637,12 @@ app.interpretation = {
 											row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
 											delete data[x].image;
 										}
+										var line_clamp = "";
+										if(typeof content_item.clamp_content !== 'undefined') {
+											line_clamp = "line_clamp";
+										}
 										if(typeof data[x].content !== 'undefined') {
-											row_item += "<div class='content list_element line_clamp' style='padding-bottom: 20px;'>"+data[x].content+"</div>";
+											row_item += "<div class='content list_element "+line_clamp+"' style='padding-bottom: 20px;'>"+data[x].content+"</div>";
 											delete data[x].content;
 										}
 										delete data[x].id;

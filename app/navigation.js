@@ -22,7 +22,7 @@ app.navigation = {
 		if(typeof set_hash_value !== 'undefined') {
 			history.replaceState(undefined, undefined, set_hash_value)	
 		}
-		if(window.location.hash!=this.recent_hash) {
+		if(window.location.hash != this.recent_hash) {
 			this.recent_hash = window.location.hash;
 			this.hash_value = this.recent_hash.substr(1);
 			this.open_tab();
@@ -44,99 +44,140 @@ app.navigation = {
 		return get_data;
 	},
 	access_granted: true,
+	state_set: false,
+	$parse_render_frame: null,
 	parse_render: function(split, frame, $frame, id, get_data, frame_depth_offset) {
+		//function get_state() {
+		//}
 		this.access_granted = true;
 		var branch = this;
-		var last_level_rendered = -1;
-		for(var x in split) {
-			if(split[x].indexOf('#') != -1) {
-				var id_split = split[x].split('#');
-				split[x] = id_split[0];
-				id = id_split[1];
-				get_data = branch.parse_get_data(id);
-			}
-			(function(frame, $frame, page, get_data) {
-				var callback = function() {
-						/*var parent_level = x-1;
-						if(parent_level >= 0) {
-							$parent_frame = branch.frames.find_frame(parent_level);
-							
-							if($parent_frame.find('.menu_top').length > 0) {
-								var $menu_button = $parent_frame.find('.menu_button.'+page+'_button');
-								$menu_button.parent().children().each(function() {
-									$(this).css('color', 'inherit');
-								});
-								$menu_button.first().css('color', '#fff');
-							}
-						}*/
+		branch.$parse_render_frame = $frame;
+		var split_index = 0;
+		var continue_render = function(x) {
+			var last_level_rendered = -1;
+			//for(var x in split) {
+				if(split[x].indexOf('#') != -1) {
+					var id_split = split[x].split('#');
+					split[x] = id_split[0];
+					id = id_split[1];
+					get_data = branch.parse_get_data(id);
 				}
-				var page_object = branch.root.interpretation.find_page(page);
-				function page_render() {
-					if(typeof id !== 'undefined' && typeof page_object.no_get_data === 'undefined') {
-						var post_data = {
-							'action': 'get_'+page,
-							//'id': id	
-						};
-						for(var x in get_data) {
-							post_data[x] = get_data[x];
-						}	
-						$.post(branch.root.actions, post_data, function(data) {
-							data.id = get_data.id;
-							branch.root.interpretation.render_page(page_object, frame, $frame, callback, data);
-						}, "json");
-					} else {
-						branch.root.interpretation.render_page(page_object, frame, $frame, callback, get_data);
-					}
-				}
-				if(typeof page_object.user_access !== 'undefined' && page_object.user_access !== 'user' && page_object.user_access !== 'everyone') {
-					if(branch.root.user_id == -1) {
-						branch.access_granted = false;
-					} else {
-						$.post(branch.root.actions, {
-							action: '_user_group_member',
-							groupd_name: page_object.user_access	
-						}, function(data) {
-							if(data == 1) {
-								page_render();	
-							} else {
-								//branch.access_granted = false;
-								branch.root.interpretation.view.pop_up.display("You do not have access to this page.", "fadeout");
-							}
-						});
-					}
-				} else {
-					page_render();	
-					if(typeof page_object.user_access !== 'undefined' && page_object.user_access == 'user') {
-						//alert(branch.root.user_id);
-						if(branch.root.user_id == -1) {
-							branch.access_granted = false;
+				(function(frame, $frame, page, get_data) {
+					var callback = function() {
+							/*var parent_level = x-1;
+							if(parent_level >= 0) {
+								$parent_frame = branch.frames.find_frame(parent_level);
+								
+								if($parent_frame.find('.menu_top').length > 0) {
+									var $menu_button = $parent_frame.find('.menu_button.'+page+'_button');
+									$menu_button.parent().children().each(function() {
+										$(this).css('color', 'inherit');
+									});
+									$menu_button.first().css('color', '#fff');
+								}
+							}*/
+						last_level_rendered = x;
+						frame = null;
+						if(split.length-1 != x) {
+							$frame = branch.frames.find_frame(parseInt(x)+1+parseInt(frame_depth_offset));
+							branch.$parse_render_frame = $frame;
+						}
+						var send_x = x+1;
+						if(send_x < split.length) {
+							continue_render(send_x);
 						}
 					}
+					var page_object = branch.root.interpretation.find_page(page);				
+					function page_render() {
+						if((typeof id !== 'undefined' && typeof page_object.no_get_data === 'undefined') || typeof page_object.no_get_id !== 'undefined') { // 
+							var post_data = {
+								'action': 'get_'+page,
+								//'id': id	
+							};
+							if(typeof get_data !== 'undefined') {
+								for(var x in get_data) {
+									post_data[x] = get_data[x];
+								}
+							}
+							$.post(branch.root.actions, post_data, function(data) {
+								if(typeof get_data !== 'undefined') {
+									data.id = get_data.id;
+								}
+								branch.root.interpretation.render_page(page_object, frame, $frame, callback, data);
+								return false;
+							}, "json");
+						} else {
+							branch.root.interpretation.render_page(page_object, frame, $frame, callback, get_data);
+						}
+							
+					}
+					if(typeof page_object.user_access !== 'undefined' && page_object.user_access !== 'user' && page_object.user_access !== 'everyone') {
+						if(branch.root.user_id == -1) {
+							branch.access_granted = false;
+						} else {
+							$.post(branch.root.actions, {
+								action: '_user_group_member',
+								groupd_name: page_object.user_access	
+							}, function(data) {
+								if(data == 1) {
+									page_render();	
+								} else {
+									//branch.access_granted = false;
+									branch.root.interpretation.view.pop_up.display("You do not have access to this page.", "fadeout");
+								}
+								//return false;
+							});
+						}
+					} else {
+						page_render();	
+						if(typeof page_object.user_access !== 'undefined' && page_object.user_access == 'user') {
+							//alert(branch.root.user_id);
+							if(branch.root.user_id == -1) {
+								branch.access_granted = false;
+							}
+						}
+					}
+				}(frame, branch.$parse_render_frame, split[x], get_data));
+				
+			//}
+			/*if(branch.root.interpretation.bottom_frame != branch.root.interpretation.current_render_frame && branch.root.interpretation.bottom_frame !== null && typeof branch.root.interpretation.bottom_frame.__default_page !== 'undefined') {
+				if(last_level_rendered != branch.root.interpretation.bottom_frame.level) {
+					var href = this.hash_value+"/"+branch.root.interpretation.bottom_frame.__default_page;
+					this.set_hash(href);
 				}
-			}(frame, $frame, split[x], get_data));
-			last_level_rendered = x;
-			frame = null;
-			if(split.length-1 != x) {
-				$frame = this.frames.find_frame(parseInt(x)+1+parseInt(frame_depth_offset));
+				//alert(branch.root.interpretation.bottom_frame.__default_page);
+			} else {*/
+			if(x == split.length-1) {
+				if(branch.access_granted) {
+					branch.root.user_menu.remove_login_overlay();
+				} else {
+					branch.root.user_menu.display_login_overlay();	
+				}
+				if(!this.search_initialized) {
+					branch.root.search.init();	
+					branch.search_initialized = true;
+				}
 			}
-		}
-		/*if(branch.root.interpretation.bottom_frame != branch.root.interpretation.current_render_frame && branch.root.interpretation.bottom_frame !== null && typeof branch.root.interpretation.bottom_frame.__default_page !== 'undefined') {
-			if(last_level_rendered != branch.root.interpretation.bottom_frame.level) {
-				var href = this.hash_value+"/"+branch.root.interpretation.bottom_frame.__default_page;
-				this.set_hash(href);
-			}
-			//alert(branch.root.interpretation.bottom_frame.__default_page);
-		} else {*/
-		if(branch.access_granted) {
-			branch.root.user_menu.remove_login_overlay();
+			//}
+		};
+		
+		if(!branch.state_set) {
+			$.post(branch.root.actions, {
+				'action': 'get_state'	
+			}, function(state_data) {
+				branch.state_set = true;
+				//alert(state_data);
+				for(var x in state_data) {
+					//alert(x);
+					//alert(state_data[x]);
+					branch.root[x] = state_data[x];
+				}
+				continue_render(split_index);
+			}, "json");
+			//alert('test');
 		} else {
-			branch.root.user_menu.display_login_overlay();	
+			continue_render(split_index);	
 		}
-		if(!this.search_initialized) {
-			branch.root.search.init();	
-			this.search_initialized = true;
-		}
-		//}
 	},
 	search_initialized: false,
 	open_tab: function() {
