@@ -176,10 +176,10 @@ app.interpretation = {
 		if($container.find('#'+page.id).length > 0) {
 			$container.find('#'+page.id).remove();	
 		}
-		var style = "";
-		if(this.current_render_frame.level != 0) {
-			style = 'display:none;'	
-		}
+		var style = 'display:none;'	
+		//if(this.current_render_frame.level != 0) {
+			//style = 
+		//}
 		var icon = "";
 		if(typeof page.icon !== 'undefined') {
 			var icon_value;
@@ -198,8 +198,17 @@ app.interpretation = {
 			$title_element.wrap("<a href='"+title_href+"'></a>");	
 			$logo_element.wrap("<a href='"+title_href+"'></a>");	
 		}
-		if(frame == 'body') {
+		/*alert(frame);
+		if(typeof $frame !== 'undefined') {
+			alert($frame[0].id);
+		}*/	
+		/*if((frame == 'body' && typeof $frame === 'undefined') || frame == null && typeof $frame === 'object') {
 			$container.find('.title').first().show();	
+		}*/
+		//if((frame == 'body' && typeof $frame === 'undefined') || (typeof $frame !== 'undefined' && $frame[0].id == 'body_frame')) {
+		console.log("page_display: "+page.display_title);
+		if(page.id == 'index' || typeof page.display_title !== 'undefined') {
+			$title_element.show();
 		}
 		$container = $container.find('#'+page.id);
 		branch.$container = $container;
@@ -510,7 +519,9 @@ app.interpretation = {
 								if(branch.root.language != 0) {
 									var suffix = parseInt(branch.root.language)+1;
 									suffix = "_"+suffix;
-									title = item["title"+suffix];
+									if(typeof item["title"+suffix] !== 'undefined') {
+										title = item["title"+suffix];
+									}
 								}
 								$menu_container.append("<div class='menu_button "+item.id+"_button'><a>"+title+"</a></div>");	
 							}
@@ -2135,6 +2146,8 @@ app.interpretation = {
 				var year = date_split[0];
 				var month = date_split[1];
 				var day = date_split[2];
+				month = parseInt(month);
+				month += "";
 				var month_string = "";
 				switch(month) {
 					case "1":
