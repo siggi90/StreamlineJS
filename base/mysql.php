@@ -17,7 +17,7 @@ class mysql {
 	
 	private $servers = array(
 		array(
-			'username' => 'root',
+			 'username' => 'root',
 			'password' => '',
 			'server' => 'localhost'
 		)/*, array(
@@ -57,12 +57,16 @@ class mysql {
 	}
 	
 	
-	function mysql($db=NULL, $server="localhost", $username="root") {
+	function __construct($db=NULL, $username="root", $password="", $server="localhost") {
 		$this->db = $db;
 		$this->results = NULL;
 		
+		$this->username = $username;
+		$this->password = $password;
+		
 		$this->connect();
 		$this->id_server = $this->connection[0];
+
 	}
 	
 	function setDb($d) {

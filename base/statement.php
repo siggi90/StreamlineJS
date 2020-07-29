@@ -8,6 +8,7 @@ class statement {
 	private $db;
 	private $user_id;
 	private $escape;
+	private $value_callback = array();
 	
 	public function encaps_string($s) {
 		/*if($s == "NOW()") {
@@ -37,7 +38,10 @@ class statement {
 				return "NOW()";
 				break;*/
 			default:
-				if((gettype($v) == 'string' || strpos($v, ":") != false) && $v != "NOW()") { // && !is_numeric($v)
+				if((gettype($v) == 'string')) { // && !is_numeric($v) // || (strpos($v, ":") != false) && $v != "NOW()"
+					foreach($this->value_callback as $value_callback) {
+						$v = $value_callback($v);	
+					}
 					return $this->encaps_string($v);
 				}
 				return $v;
@@ -57,10 +61,15 @@ class statement {
         return $instance;
 	}
 	
-	public function set($sql, $db, $user_id) {
+	public function set($sql, $db, $user_id, $callback=NULL) {
 		$this->sql = $sql;	
 		$this->db = $db;
 		$this->user_id = $user_id;
+		$this->value_callback = $callback;
+	}
+	
+	function set_callback($callback) {
+		$this->value_callback[] = $callback;	
 	}
 	
 	public function generate(&$values, $table=NULL, $type=NULL, $escape=false) {
@@ -147,13 +156,13 @@ class statement {
 						$counter = 0;
 						foreach($values as $key => $v) {
 							if($key != 'id') {
-								if(strlen($v) > 0) {
+								//if(strlen($v) > 0) {
 									if($counter > 0) {
 										$output .= ', ';
 									}
 									$output .= $key.' = '.$this->value($key, $v);
 									$counter++;
-								}
+								//}
 							}
 						}
 						$output .= ' WHERE id = '.$values['id'];

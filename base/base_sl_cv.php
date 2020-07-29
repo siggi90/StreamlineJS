@@ -232,7 +232,7 @@ class base {
 	}
 	
 	public function login($par) {
-		$query = "SELECT * FROM app.users WHERE email = '".$par['username']."'";
+		$query = "SELECT * FROM users WHERE email = '".$par['username']."'";
 		$row = $this->sql->get_row($query);
 		if(count($row) > 0 && $row['email'] == $par['username'] && password_verify($par['password'], $row['password'])) {
 			$this->set_user_id($row['id']);
@@ -476,12 +476,12 @@ class base {
 		if($this->user_id == -1) {
 			return 0;	
 		}
-		if($group_id == NULL) {
-			$query = "SELECT id FROM app.user_groups WHERE group_name = '".$group_name."'";
+		/*if($group_id == NULL) {
+			$query = "SELECT id FROM user_groups WHERE group_name = '".$group_name."'";
 			$group_id = $this->sql->get_row($query)['id'];
 		}
 		if($group_name == NULL) {
-			$query = "SELECT group_name FROM app.user_groups WHERE id = ".$group_id;
+			$query = "SELECT group_name FROM user_groups WHERE id = ".$group_id;
 			$group_name = $this->sql->get_row($query)['id'];	
 		}
 		if(strtolower($group_name) == "users") {
@@ -489,20 +489,21 @@ class base {
 				return 1;	
 			}
 		} else {
-			$query = "SELECT COUNT(*) as count FROM app.user_user_groups WHERE user_id = ".$this->user_id." AND user_group_id = ".$group_id;
+			$query = "SELECT COUNT(*) as count FROM user_user_groups WHERE user_id = ".$this->user_id." AND user_group_id = ".$group_id;
 			$count = $this->sql->get_row($query)['count'];	
 			if($count > 0) {
 				return 1;	
 			}
 		}
-		$query = "SELECT parent_group_id FROM app.user_groups WHERE id = ".$group_id;
+		$query = "SELECT parent_group_id FROM user_groups WHERE id = ".$group_id;
 		$group_id = $this->sql->get_row($query)['parent_group_id'];
 		if($group_id == NULL) {
 			return 0;	
 		}
 		if($group_id != -1) {
 			return $this->_user_group_member(NULL, $group_id);
-		}
+		}*/
+		return 1;
 	}
 	
 }

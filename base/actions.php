@@ -30,7 +30,7 @@
 		//echo $app->test();
 		//var_dump($_POST);
 		
-		$connection = mysqli_connect('localhost', 'root', '');
+		$connection =  $app->get_connection();//mysqli_connect('localhost', 'root', '');
 
 		function json($var) {
 			if(is_array($var)) {
@@ -157,6 +157,13 @@
 						if($group_function == $function) {
 							if($app->_user_group_member($access_group) != 1) {
 								$accessible = false;
+							}
+						} else if(strpos($group_function, "*") !== false) {
+							$split = explode('*', $group_function)[0];
+							if(strpos($function, $split) !== false) {
+								if($app->_user_group_member($access_group) != 1) {
+									$accessible = false;
+								}	
 							}
 						}
 					}
