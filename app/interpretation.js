@@ -81,6 +81,18 @@ app.interpretation = {
 					for(var x in this.loaded_callbacks) {
 						this.loaded_callbacks[x]();	
 					}
+					if(typeof tinyMCE !== 'undefined') {
+						/*setTimeout(function() {
+							tinyMCE.init({
+								 selector:'textarea.rich_text',
+								 plugins: 'paste',
+								 paste_auto_cleanup_on_paste : true,
+								 paste_remove_styles: true,
+								 paste_remove_styles_if_webkit: true,
+								 paste_strip_class_attributes: true
+							});	
+						}, 1000);*/
+					}
 					//alert('loaded'+branch.current_page.id);
 					this.loading_completed = true;
 				}
@@ -280,9 +292,9 @@ app.interpretation = {
 						if(typeof content_item.form_action !== 'undefined') {
 							action = content_item.form_action;
 						}
-						$container.append('<form action="'+action+'" id="'+content_item.id+'_file_upload" class="dropzone"></form>');
+						$container.append('<form action="'+action+'" id="'+content_item.id+'_file_upload" class="dropzone_'+content_item.id+'"></form>');
 						//Dropzone.discover();
-						var _dropzone = new Dropzone(".dropzone");
+						var _dropzone = new Dropzone(".dropzone_"+content_item.id);
 						$upload_form = $container.find('#'+content_item.id+'_file_upload').first();
 						if(typeof content_item.submit_mask !== 'undefined') {
 							var post_data = {};
@@ -1457,12 +1469,26 @@ app.interpretation = {
 											if(typeof form_element.rich_text !== 'undefined' && form_element.rich_text == true) {
 												$form.append("<div class='title small'>"+form_element.placeholder+"</div>");
 											}
+											/*if($('textarea#'+form_element.id).length > 0) {
+												form_element.id += "-2";	
+											}*/
+											if(typeof tinyMCE !== 'undefined') {
+												tinyMCE.EditorManager.execCommand('mceRemoveEditor',true, form_element.id);
+											}
 											$form.append("<div class='form_element'><textarea id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"'></textarea></div>");
 											var $textarea = $form.find('#'+form_element.id).first();
 											$input = $textarea;
 											if(typeof form_element.rich_text !== 'undefined' && form_element.rich_text == true) {
 												$input.addClass('rich_text');
 												$input.parent().addClass('rich_text');
+												tinyMCE.init({
+													 selector:'#'+content_item.id+'_form > .rich_text > textarea.rich_text#'+form_element.id,
+													 plugins: 'paste',
+													 paste_auto_cleanup_on_paste : true,
+													 paste_remove_styles: true,
+													 paste_remove_styles_if_webkit: true,
+													 paste_strip_class_attributes: true
+												});	
 											}
 											break;
 										case 'tags':
@@ -1792,9 +1818,7 @@ app.interpretation = {
 								}
 							});
 							//form_object.operation.load();
-							if(typeof tinymce !== 'undefined') {
-								tinymce.init({ selector:'textarea.rich_text' });	
-							}
+							
 							branch.loaded_objects[page.id].loaded();
 						}(content_item));
 						break;

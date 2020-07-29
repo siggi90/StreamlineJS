@@ -889,6 +889,7 @@ var base = {
 				}, function(data) {
 					if(data != "-1") {
 						branch.root.user_id = data;		
+						branch.root.navigation.recent_hash = "";
 						branch.root.navigation.poll_hash();
 						$('.console').addClass('console_back');
 						$('.body_container').removeClass('blur');
