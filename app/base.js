@@ -263,10 +263,8 @@ var base = {
 		
 	},
 	traverse: function(object, level) {
-		alert('level'+level);
 		for(var x in object) {
 			if(this.excluded_properties.indexOf(x) == -1) {
-				alert(x);
 				this.traverse(object[x], level+1);	
 			}
 		}
@@ -344,7 +342,7 @@ var base = {
 		var win = window.parent;
 		window.addEventListener("message", function(event) {
 			alert( "received: " + event.data );
-			if(event.origin == 'http://althingi.net' || event.origin == 'http://www.althingi.net') {
+			if(event.origin == 'http://noob.software' || event.origin == 'http://www.noob.software') {
 				var split;
 				var hash = "";
 				if(event.data.indexOf('hash') != -1) {
@@ -889,7 +887,8 @@ var base = {
 					username: $('.login #username').val(),
 					password: $('.login #password').val()	
 				}, function(data) {
-					if(data != "-1") {		
+					if(data != "-1") {
+						branch.root.user_id = data;		
 						branch.root.navigation.poll_hash();
 						$('.console').addClass('console_back');
 						$('.body_container').removeClass('blur');
@@ -910,6 +909,7 @@ var base = {
 							});
 						});
 						branch.get_username();
+						callback();
 					}
 				});
 			});
