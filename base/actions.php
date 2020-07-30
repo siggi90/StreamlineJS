@@ -24,6 +24,9 @@
 		$action = $_REQUEST['action'];
 		$_POST = $_REQUEST;
 		unset($_POST['action']);
+		unset($_POST['_ga']);
+		unset($_POST['_gid']);
+		unset($_POST['_gat']);
 		$app = new app();
 		//$appstat = $app->appstat;
 		

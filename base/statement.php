@@ -38,7 +38,7 @@ class statement {
 				return "NOW()";
 				break;*/
 			default:
-				if((gettype($v) == 'string')) { // && !is_numeric($v) // || (strpos($v, ":") != false) && $v != "NOW()"
+				if((gettype($v) == 'string') && $v != "NOW()") { // && !is_numeric($v) // || (strpos($v, ":") != false) )"
 					foreach($this->value_callback as $value_callback) {
 						$v = $value_callback($v);	
 					}

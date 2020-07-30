@@ -7,7 +7,7 @@ app.interpretation = {
 	traverse: function(definition_element) {
 		
 	},
-	call_on_submit: function(on_submit) {
+	call_on_submit: function(on_submit, send_data) {
 		var branch = this;
 		for(var x in on_submit) {
 			var callback_item = on_submit[x];
@@ -15,7 +15,11 @@ app.interpretation = {
 			var type = split[split.length-1]+"s";
 			var statement = "var element = branch.root.elements."+type+"['"+callback_item+"']";
 			eval(statement);
-			element.operation.load();	
+			switch(type) {
+				default:
+					element.operation.load(send_data);	
+					break;
+			}
 		}	
 	},
 	loaded_objects: Array(),
@@ -1559,6 +1563,13 @@ app.interpretation = {
 												}(form_element, select_object, $select));
 												//select_object.operation.load();
 											}
+											if(typeof form_element.on_change !== 'undefined') {
+												$select.change(function() {
+													var send_data = {};
+													send_data[form_element.on_change_load_mask['id']] = $select.val();
+													branch.call_on_submit(form_element.on_change, send_data);
+												});
+											}
 											branch.root.assign_root_object(select_object);
 											select_object.operation.init();
 											form_object.operation.elements[form_element.id] = select_object;
@@ -1756,6 +1767,7 @@ app.interpretation = {
 											eval(statement);	
 										}
 									});
+									var $save = $(this);
 									$.post(branch.root.actions, submit_data, function(data) {
 										$form.find('#id').first().val(data);
 										if(data == -1) {
@@ -1794,6 +1806,10 @@ app.interpretation = {
 										if(typeof content_item.redirect !== 'undefined') {
 											document.location.href = content_item.redirect;
 										}
+										$save.addClass('saved');
+										setTimeout(function() {
+											$save.removeClass('saved');
+										}, 500);
 									});
 								});
 							}
