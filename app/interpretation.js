@@ -292,7 +292,7 @@ app.interpretation = {
 						if(typeof content_item.form_action !== 'undefined') {
 							action = content_item.form_action;
 						}
-						$container.append('<form action="'+action+'" id="'+content_item.id+'_file_upload" class="dropzone_'+content_item.id+'"></form>');
+						$container.append('<form action="'+action+'" id="'+content_item.id+'_file_upload" class="dropzone dropzone_'+content_item.id+'"></form>');
 						//Dropzone.discover();
 						var _dropzone = new Dropzone(".dropzone_"+content_item.id);
 						$upload_form = $container.find('#'+content_item.id+'_file_upload').first();
@@ -1285,12 +1285,16 @@ app.interpretation = {
 											var id = $(this).attr('id');
 											if($(this).hasClass('rich_text')) {
 												tinyMCE.get(id).setContent("");
-											} else if(!$(this).hasClass('ignore_reset')) {
-												$(this).val("").trigger('change');
+											} else if(!$(this).hasClass('ignore_reset') && !$(this).hasClass('persist_value')) {
+												if(typeof $(this).data("default_value") !== 'undefined') {
+													$(this).val($(this).data("default_value")).trigger("change");	
+												} else {
+													$(this).val("").trigger('change');
+												}
 											}
 										});
 										$form.find('input[type=hidden]').each(function() {
-											if(!$(this).hasClass('ignore_reset')) {
+											if(!$(this).hasClass('ignore_reset') && !$(this).hasClass('persist_value')) {
 												$(this).val("-1").trigger('change');
 											}
 										});
@@ -1406,6 +1410,21 @@ app.interpretation = {
 									switch(form_element.type) {
 										case 'date':
 											$form.append("<div class='form_element'><input type='date' id='"+form_element.id+"' class='form_input' value='' /></div>");
+											$input = $form.find('#'+form_element.id).first();
+											if(typeof form_element.default_value !== 'undefined') {
+												var date = new Date();
+												var split;
+												if(form_element.default_value.indexOf('Y') !== -1) {
+													split = form_element.default_value.split('Y').join(date.getFullYear());
+												}
+												if(form_element.default_value.indexOf('M') !== -1) {
+													split = form_element.default_value.split('M').join(date.getMonth());
+												}
+												if(form_element.default_value.indexOf('D') !== -1) {
+													split = form_element.default_value.split('D').join(date.getDate());
+												}
+												$input.data('default_value', split);
+											}
 											break;
 										case 'radio':
 											var append_value = "<div class='form_element flex'><div class='radio_buttons form_input' id='"+form_element.id+"'>";
@@ -1635,6 +1654,9 @@ app.interpretation = {
 									}
 									if(typeof form_element.ignore_reset !== 'undefined' && form_element.ignore_reset == true) {
 										$input.addClass('ignore_reset');	
+									}
+									if(typeof form_element.persist_value !== 'undefined' && form_element.persist_value == true) {
+										$input.addClass('persist_value');	
 									}
 									if(typeof form_element.optional_field !== 'undefined') {
 										$input.addClass('optional_field');	
