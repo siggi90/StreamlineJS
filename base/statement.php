@@ -61,11 +61,10 @@ class statement {
         return $instance;
 	}
 	
-	public function set($sql, $db, $user_id, $callback=NULL) {
+	public function set($sql, $db, $user_id) {
 		$this->sql = $sql;	
 		$this->db = $db;
 		$this->user_id = $user_id;
-		$this->value_callback = $callback;
 	}
 	
 	function set_callback($callback) {
@@ -119,12 +118,12 @@ class statement {
 				} else if($row['COLUMN_NAME'] == 'password' && isset($values['password'])) {
 					$values['password'] = password_hash($values['password'], PASSWORD_DEFAULT);
 					//var_dump($values['password']);
-				} else if($row['COLUMN_NAME'] == 'id') {
+				}/* else if($row['COLUMN_NAME'] == 'id') {
 					if(!isset($values["id"])) {
 						$values["id"] = $this->sql->get_id($db.".".$table);	
 						$type = 1;
 					}
-				}
+				}*/
 			}
 			$table = $db.".".$table;
 		}

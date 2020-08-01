@@ -6,10 +6,11 @@ class base {
 	protected $app_id;
 	protected $project_root;
 	protected $server_root;
-	public $statement;
-	public $sql; //protected
+	protected $statement;
+	protected $sql; //
 	public $colors;
 	protected $modules;
+	protected $login_callbacks = array();
 	
 	function __construct($app_id=NULL, $project_root, $sql_username=NULL, $sql_password=NULL, $sql_database=NULL) {
 		@session_start();
@@ -38,6 +39,26 @@ class base {
 	function get_connection() {
 		return $this->sql->get_connection();	
 	}
+	
+	function get_state() {
+		return array();	
+	}
+	
+	private $access_key_digits;
+	
+	function generate_key() {
+		$this->access_key_digits = range(0, 9);
+		$this->access_key_digits = array_merge($this->access_key_digits, range("a", "z"));
+		$length = 50;
+		$counter = 0;
+		$result = [];
+		while($counter < $length) {
+			$result[] = $this->acces_key_digits[rand(0, count($this->acces_key_digits)-1)];
+			$counter++;	
+		}
+		return implode("", $result);
+	}
+	
 	
 	function get_definition() {
 		$definition_location = $this->server_root.$this->project_root."/app/definition.js";
@@ -237,6 +258,9 @@ class base {
 		if(count($row) > 0 && $row['email'] == $par['username'] && password_verify($par['password'], $row['password'])) {
 			$this->set_user_id($row['id']);
 			//$this->store_session();
+			foreach($this->login_callbacks as $login_callback) {
+				$login_callback($par['username'], $par['password']);	
+			}
 			return $row['id'];	
 		} else {
 			return -1;	

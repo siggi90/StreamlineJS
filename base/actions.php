@@ -27,7 +27,15 @@
 		unset($_POST['_ga']);
 		unset($_POST['_gid']);
 		unset($_POST['_gat']);
+		unset($_POST['_fbp']);
 		$app = new app();
+		
+		//if(isset($require_token) && $require_token === true && isset($app->cloud_api)) {
+		if(isset($app->cloud_api) && isset($_POST['_api_user_id'])) {
+			if(!$app->cloud_api->verify_token($_POST['_api_user_id'], $_POST['_api_token'])) {
+				//exit;	
+			}
+		}
 		//$appstat = $app->appstat;
 		
 		//echo $app->test();
@@ -156,19 +164,23 @@
 			}
 			if(isset($current_module->function_access)) {
 				foreach($current_module->function_access as $access_group => $group_functions) {
-					foreach($group_functions as $group_function) {
-						if($group_function == $function) {
-							if($app->_user_group_member($access_group) != 1) {
-								$accessible = false;
-							}
-						} else if(strpos($group_function, "*") !== false) {
-							$split = explode('*', $group_function)[0];
-							if(strpos($function, $split) !== false) {
+					if($access_group != "inaccessible") {
+						foreach($group_functions as $group_function) {
+							if($group_function == $function) {
 								if($app->_user_group_member($access_group) != 1) {
 									$accessible = false;
-								}	
+								}
+							} else if(strpos($group_function, "*") !== false) {
+								$split = explode('*', $group_function)[0];
+								if(strpos($function, $split) !== false) {
+									if($app->_user_group_member($access_group) != 1) {
+										$accessible = false;
+									}	
+								}
 							}
 						}
+					} else {
+						$accessible = false;	
 					}
 				}
 			}

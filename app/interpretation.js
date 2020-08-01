@@ -17,6 +17,7 @@ app.interpretation = {
 			eval(statement);
 			switch(type) {
 				default:
+					console.log(send_data);
 					element.operation.load(send_data);	
 					break;
 			}
@@ -114,8 +115,12 @@ app.interpretation = {
 		var branch = this;
 		var animation = false;
 		//alert(poge.id);
-		if(page.id != 'search') {
-			document.title = page.title;
+		if(page.id != 'search' && page.title != "") {
+			if(document.title == "") {
+				document.title = page.title
+			} else {
+				document.title = page.title;
+			}
 		}
 		this.loaded_callbacks = Array();
 		if(this.current_page !== null) {
@@ -129,8 +134,12 @@ app.interpretation = {
 			}
 		}
 		if(typeof page_data !== 'undefined') {
-			if(typeof page_data.title !== 'undefined') {
-				document.title = page_data.title;	
+			if(typeof page_data.title !== 'undefined' && page_data.title != "") {
+				if(document.title == "") {
+					document.title = page_data.title;	
+				} else {
+					document.title = page_data.title;	
+				}
 				page.title = page_data.title;
 			}
 		}
@@ -192,7 +201,7 @@ app.interpretation = {
 		if($container.find('#'+page.id).length > 0) {
 			$container.find('#'+page.id).remove();	
 		}
-		var style = 'display:none;'	
+		var style = 'display:none; visibility:collapse;'	
 		//if(this.current_render_frame.level != 0) {
 			//style = 
 		//}
@@ -206,8 +215,9 @@ app.interpretation = {
 			}
 			icon = "<div class='logo' style='background-image:url(/images/"+icon_value+".png)'></div>";	
 		}
-		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title main_title' style='"+style+"'>"+page.title+"</div><div class='sub_main_title'>"+page.title+"</div><div class='menu_top_container'></div></div>");
+		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title main_title' style='"+style+"'>"+page.title+"</div><div class='sub_main_title' style='visibility:collapse;'>"+page.title+"</div><div class='menu_top_container'></div></div>");
 		var $title_element = $('#'+page.id+' .main_title').first();
+		var $sub_title_element = $('#'+page.id+' .sub_main_title').first();
 		var $logo_element = $('#'+page.id+' .logo').first();
 		if(typeof page.title_link !== 'undefined') {
 			var title_href = branch.root.navigation.generate_href(page.title_link);
@@ -223,7 +233,12 @@ app.interpretation = {
 		}*/
 		//if((frame == 'body' && typeof $frame === 'undefined') || (typeof $frame !== 'undefined' && $frame[0].id == 'body_frame')) {
 		if(page.id == 'index' || typeof page.display_title !== 'undefined') {
-			$title_element.show();
+			$title_element.show().css({
+				'visibility': 'visible'
+			});
+			$sub_title_element.css({
+				'visibility': 'visible'
+			});;
 		}
 		$container = $container.find('#'+page.id);
 		branch.$container = $container;
@@ -234,6 +249,7 @@ app.interpretation = {
 		//var $element;
 		for(var x in content) {
 			var content_item = content[x];
+			var content_item_object;
 			(function(content_item){
 				var $content_item_element;
 				var style_requirment = "";
@@ -267,7 +283,11 @@ app.interpretation = {
 							}, function(data) {
 								for(var i in data) {
 									var item = data[i];
-									$options.append("<div class='menu_button' id='"+data[i].id+"_option'><a>"+data[i].value+"</a></div>");	
+									var image = "";
+									if(typeof data[i].image !== 'undefined') {
+										image = "<br><div style='background-image:url(/images/"+data[i].image+".png);' class='option_image' style='max-width:'100%'></div>";	
+									}
+									$options.append("<div class='menu_button' id='"+data[i].id+"_option'><a>"+data[i].value+""+image+"</a></div>");	
 									var $option = $options.find('#'+data[i].id+'_option').first();
 									var post_data = {};
 									for(var y in content_item.load_mask) {
@@ -276,12 +296,15 @@ app.interpretation = {
 									
 									if(typeof content_item.target_object !== 'undefined') {
 										$option.click(function() {
-											target_object.load('', post_data);
+											//target_object.load('', post_data);
+											branch.load_object(target_object, post_data);
 										});
 									} else if(typeof content_item.target !== 'undefined') {
 										if(content_item.target == 'self') {
 											var href = branch.root.navigation.generate_href(page.id, null, null, post_data, frame_id);
 											$option.find('a').first().attr('href', href);
+										} else if(content_item.target == 'href' && typeof data[i].href !== 'undefined') {
+											$option.find('a').first().attr('href', data[i].href);	
 										}
 									}
 								}
@@ -300,8 +323,13 @@ app.interpretation = {
 						//Dropzone.discover();
 						var _dropzone = new Dropzone(".dropzone_"+content_item.id);
 						$upload_form = $container.find('#'+content_item.id+'_file_upload').first();
+						var upload_object = {
+							load: function() {
+								_dropzone.removeAllFiles(true);	
+							}
+						};
+						var post_data = {};
 						if(typeof content_item.submit_mask !== 'undefined') {
-							var post_data = {};
 							for(var i in content_item.submit_mask) {
 								var item = content_item.submit_mask[i];
 								if(item.indexOf('.') !== -1) {
@@ -312,7 +340,6 @@ app.interpretation = {
 									var $target_element = target_object.$element.find('#'+item_property);
 									
 									$target_element.change(function() {
-										var post_data = {};
 										for(var y in content_item.submit_mask) {
 											var item = content_item.submit_mask[y];
 											if(item.indexOf('.') !== -1) {
@@ -322,6 +349,7 @@ app.interpretation = {
 												var target_object = branch.root.elements.find_element_object(item_object);
 												var $target_element = target_object.$element.find('#'+item_property);															
 												var value = $target_element.val();
+												alert(value);
 												post_data[y] = value;
 											}
 										}
@@ -345,10 +373,12 @@ app.interpretation = {
 							}
 							$upload_form.attr('action', action_string);
 							_dropzone.options.url = action_string;
+							
+							content_item_object = upload_object;
 						}
 						if(typeof content_item.on_submit !== 'undefined') {
 							_dropzone.on("queuecomplete", function(file) {
-								branch.call_on_submit(content_item.on_submit);
+								branch.call_on_submit(content_item.on_submit, post_data);
 							});
 						}
 						$content_item_element = $upload_form;
@@ -1651,7 +1681,7 @@ app.interpretation = {
 											//if($form.find('#id').val() != "-1") {
 												$.post(branch.root.actions, {
 													action: form_element.id+'_validation',
-													value: $(this).val(),
+													value: $this.val(),
 													id: $form.find('#id').val()
 												}, function(data) {
 													if(data) {
@@ -1769,7 +1799,7 @@ app.interpretation = {
 									});
 									var $save = $(this);
 									$.post(branch.root.actions, submit_data, function(data) {
-										$form.find('#id').first().val(data);
+										$form.find('#id').first().val(data).trigger('change');
 										if(data == -1) {
 											form_object.operation.load();
 										}
@@ -2056,13 +2086,19 @@ app.interpretation = {
 									}
 									if(dependency.value == "set") {
 										if(linked_value != "-1") {
-											$content_item_element.show();	
+											$content_item_element.show();
+											if(typeof content_item_object !== 'undefined') {
+												content_item_object.load();	
+											}
 										} else {
 											$content_item_element.hide();	
 										}
 									} else {
 										if(linked_value == dependency.value) {
-											$content_item_element.show();	
+											$content_item_element.show();
+											if(typeof content_item_object !== 'undefined') {
+												content_item_object.load();	
+											}	
 										} else {
 											$content_item_element.hide();	
 										}

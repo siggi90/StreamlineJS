@@ -87,7 +87,7 @@ app.navigation = {
 							continue_render(send_x);
 						}
 					}
-					var page_object = branch.root.interpretation.find_page(page);				
+					var page_object = branch.root.interpretation.find_page(page);		
 					function page_render() {
 						if((typeof id !== 'undefined' && typeof page_object.no_get_data === 'undefined') || typeof page_object.no_get_id !== 'undefined') { // 
 							var post_data = {
@@ -100,6 +100,7 @@ app.navigation = {
 								}
 							}
 							$.post(branch.root.actions, post_data, function(data) {
+								console.log(data);
 								if(typeof get_data !== 'undefined') {
 									data.id = get_data.id;
 								}

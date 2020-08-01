@@ -327,10 +327,11 @@ class random extends _class {
 		}
 		$number = $counter / $step_size;
 		//var_dump($number);
-		if(strpos($number, ".") !== false) {
+		/*if(strpos($number, ".") != false) {
 			$split = explode(".", $number);
 			$number = $split[0];	
-		}
+		}*/
+		$number = floor($number);
 		/*$dismiss_stop = 360/$step_size;
 		$dismiss_start = $dismiss_stop - $this->dismiss_count;*/
 		if($number > $this->range) {
