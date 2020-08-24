@@ -21,18 +21,147 @@ input[type='checkbox'] {
 	width:auto;	
 }
 
+input.dark {
+	background:rgba(0,0,0,0.75);	
+}
+
+.small {
+	font-size:25px !important;	
+}
+
+.option_image {
+	height: 100px;
+	background-size: auto 100%;
+	background-repeat: no-repeat;
+	background-position: center;	
+}
+
+.content.list_element {
+	padding-bottom:5px;	
+}
+
+.form_element > .caption {
+	color:#ddd;	
+}
+
+.status_name {
+	float:left;	
+}
+
+.status_icon {
+	font-size:32px;
+	float:left;	
+}
+
+.status {
+	height: auto;
+	overflow: auto;	
+}
+
+
+.day_counter {
+	position:absolute;
+	top:0px;	
+}
+
+.loading_spinner > div {
+	width:45px;
+	height:45px;
+	font-size:45px;
+	color:#fff;
+	animation-name: spin;
+    animation-duration: 2000ms;
+    animation-iteration-count: infinite;
+    animation-timing-function: linear;
+}
+
+@keyframes spin {
+    from {transform:rotate(0deg);}
+    to {transform:rotate(360deg);}
+}
+
+button.save {
+	
+}
+
+button.save {
+    -webkit-transition:text-shadow 0.5s ease-in-out;
+    -moz-transition:text-shadow 0.5s ease-in-out;
+    -o-transition:text-shadow 0.5s ease-in-out;
+    -ms-transition:text-shadow 0.5s ease-in-out;
+    transition:text-shadow 0.5s ease-in-out;    
+    
+    text-shadow:0px 0px 0px #fff; 
+}
+
+button.save.submit_error {
+    text-shadow:0px 0px 10px rgb(252, 3, 86);   
+}
+
+
+button.save.saved {
+    text-shadow:0px 0px 10px #fff;   
+}
+
+.tooltip {
+	position: relative;
+	display: inline-block;
+	/*border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+}
+	
+.tooltip .tooltiptext {
+	visibility: hidden;
+	width: 120px;
+	background-color: black;
+	color: #fff;
+	text-align: center;
+	padding: 5px 0;
+	border-radius: 6px;
+	
+	position: absolute;
+	z-index: 1; 
+	top:0px;
+	right: 105%; 
+	font-size:15px;
+}
+	
+.tooltip:hover .tooltiptext {
+	visibility: visible;
+}
+
+.list_image {
+	width:100%;
+	min-height:100px;
+	background-size:cover;	
+}
+
+.current_date_calendar .day_counter {
+	font-weight:bold;	
+}
+
+.table_header {
+	height:25px !important;	
+}
+
 .divRow > .calendar_cell {
 	display:table-cell;
-	vertical-align: middle;
+	vertical-align:top;
 	/*border: 1px solid rgba(0,0,0,0.05);*/
 	border:1px solid rgba(255,255,255,0.15);
 	border-bottom: none;
 	border-left: none;
+	position:relative;
+	height:inherit;
 }
 .divRow > .day_cal {
 	text-align: center;
-	height:60px;
+	/*height:60px;*/
 	display:table-cell;
+	vertical-align:middle;
+}
+
+.calendar_days_row {
+	height:25px !important;	
 }
 
 .day_counter {
@@ -49,6 +178,8 @@ input[type='checkbox'] {
 .divRow {
 	width:100%;	
 	display:table-row;
+	height:70px;
+	overflow:hidden;
 }
 
 .container {
@@ -93,7 +224,19 @@ input[type='checkbox'] {
 	left:0px;
 }
 
-@media only screen and (max-width: 720px) {
+.sub_main_title {
+	display:none;	
+	color:#fff;
+	font-size:60px;
+	width:100%;
+}
+
+/*@media only screen and (max-width: 1000px) {*/
+@media (max-aspect-ratio: 5/6) {
+	body {
+		font-weight:400;
+	}
+	
 	.table .table_row {
 		display:grid !important;	
 		padding-bottom: 30px;	
@@ -109,11 +252,25 @@ input[type='checkbox'] {
 	}
 	
 	.menu_button {
-		display:grid !important;	
+		display:grid !important;
+		
+		font-size:40px !important;		
+	}
+	
+	.last_menu_item {
+		margin-bottom:20px;	
 	}
 	
 	.menu_top {
 		height:auto;	
+	}
+	
+	.main_title {
+		display:none !important;	
+	}
+	
+	.sub_main_title {
+		display:flex;
 	}
 }
 
@@ -122,6 +279,20 @@ input[type='checkbox'] {
 	padding:20px;
 	background:rgba(0,0,0,0.2);
 	color:#ddd;	
+}
+
+.page > .content_light {
+	border-radius:5px;
+	padding:20px;
+	background:rgba(255,255,255,0.2);
+	color:#282828;	
+}
+
+.content_light {
+	border-radius:5px;
+	padding:20px;
+	background:rgba(255,255,255,0.2);
+	color:#282828;	
 }
 
 .search_input_wrap {
@@ -483,6 +654,11 @@ button {
 	color:#ddd;
 }
 
+.max_original_size {
+	max-width:100%;
+	height:auto	
+}
+
 .table .title {
 	font-size:inherit;	
 	padding:0px;
@@ -496,13 +672,14 @@ button {
 	width: 100%;
 	border-radius:5px;
 	overflow:hidden;
+	table-layout:fixed;
 }
 
 .table .table_column {
 	display:table-cell;
-	overflow: hidden;
+	/*overflow: hidden;
 	white-space: nowrap;
-	text-overflow: ellipsis;
+	text-overflow: ellipsis;*/
 	padding:10px;
 	border-left: 1px solid rgba(255,255,255,0.1);
 	border-bottom: 1px solid rgba(255,255,255,0.1);	
@@ -800,9 +977,8 @@ body.night {
 
 .user_info {
 	position:absolute;
-	right:20px;
+	right:10px;
 	margin-top:40px;
-	margin-right:20px;
 	color:#fff;
 	font-size:28px;	
 	z-index:111;
@@ -969,6 +1145,11 @@ body.night {
 	/*padding-top:20px;	*/
 }
 
+.menu_options {
+	border-radius:5px;
+	overflow:hidden;	
+}
+
 .console_input {
 	border:none;
 	border-radius:0px;
@@ -1055,30 +1236,15 @@ body.night {
 	left:0px;
 	height:100px;
 	padding:30px;
+	padding-left:10px;
 	color:#fff;	
 	z-index:000;
 }
 
-.user_info {
-	float:right;
-	margin-top:40px;
-	margin-right:20px;
-	color:#fff;
-	font-size:28px;	
-	z-index:111;
-}
 
 .user_info > div {
 	float:left;
 	margin-left:20px;	
-}
-
-.body_container {
-	position:absolute;
-	top:0px;
-	left:0px;
-	right:0px;
-	bottom:0px;	
 }
 
 .black_opacity {

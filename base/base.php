@@ -1,4 +1,7 @@
 <?
+ini_set('session.cookie_lifetime', 0);
+
+include 'config.php';
 
 class base {
 	private $color;
@@ -10,22 +13,14 @@ class base {
 	protected $sql; //
 	public $colors;
 	protected $modules;
-	protected $login_callbacks = array();
+	public $login_callbacks = array();
 	
-	function __construct($app_id=NULL, $project_root, $sql_username=NULL, $sql_password=NULL, $sql_database=NULL) {
+	function __construct($app_id=NULL, $project_root) {
 		@session_start();
-		//echo "sess_id: ".session_id()."<br>";
 		$this->app_id = $app_id;
 		$this->project_root = $project_root;
-		$this->server_root = $_SERVER["DOCUMENT_ROOT"]; //"/Volumes/Macintosh HD/Applications/XAMPP/xamppfiles/htdocs";
+		$this->server_root = $_SERVER["DOCUMENT_ROOT"]; 
 		$this->autoload();
-		if($sql_database == NULL) {
-			$sql_database = $app_id;	
-		}
-		$this->sql = new mysql($sql_database, $sql_username, $sql_password);
-		/*if(!isset($_SESSION['user_id'])) {
-			$this->get_session();
-		}*/
 		if(isset($_SESSION['user_id'])) {
 			$this->set_user_id($_SESSION['user_id']);
 		} else {
@@ -33,15 +28,12 @@ class base {
 			$_SESSION['user_id'] = -1;	
 			unset($_SESSION['user_id']);
 		}
-		$this->statement = statement::init($this->sql, $sql_database, $this->user_id);
+		$this->sql = new mysql($app_id);
+		$this->statement = statement::init($this->sql, $app_id, $this->user_id);
 	}
 	
 	function get_connection() {
 		return $this->sql->get_connection();	
-	}
-	
-	function get_state() {
-		return array();	
 	}
 	
 	private $access_key_digits;
@@ -49,11 +41,12 @@ class base {
 	function generate_key() {
 		$this->access_key_digits = range(0, 9);
 		$this->access_key_digits = array_merge($this->access_key_digits, range("a", "z"));
+		$this->access_key_digits = array_merge($this->access_key_digits, range("A", "Z"));
 		$length = 50;
 		$counter = 0;
 		$result = [];
 		while($counter < $length) {
-			$result[] = $this->acces_key_digits[rand(0, count($this->acces_key_digits)-1)];
+			$result[] = $this->access_key_digits[rand(0, count($this->access_key_digits)-1)];
 			$counter++;	
 		}
 		return implode("", $result);
@@ -159,6 +152,10 @@ class base {
 		return false;
 	}
 	
+	private $extended_directories = array(
+		'cloud_api'
+	);
+	
 	private function autoload($files=NULL) {
 		if($files == NULL) {
 			$files = get_included_files();
@@ -172,19 +169,14 @@ class base {
 			$current_class = explode(".php", $current_class[count($current_class)-1])[0];
 			
 			while(($line = fgets($handle)) !== false) {
-				// process the line read.
 				if($counter > 0) {
-					//$current_class = "";
 					$pos = strpos($line, " new ");
 					$end = strpos($line, "(", $pos);
 					if($pos != false) {
 						$class_name = substr($line, $pos+5, $end-($pos+5));
 						if($class_name != "" && $class_name != "app" && $class_name != "self" && !$this->is_loaded($class_name) && !$this->is_excluded($class_name)) { //
 							if($class_name != $current_class) {
-								$classes[$class_name] = true;
-								/*echo $line."<br>";
-								echo "class: ".$class_name."<br>";*/
-							}
+								$classes[$class_name] = true;							}
 						}
 					}
 					
@@ -199,9 +191,6 @@ class base {
 						if($class != "" && $class != "app" && $class != "parent" && !$this->is_excluded($class_name)) {
 							if($class != $current_class) {
 								$classes[$class] = true;
-								/*echo $line."<br>";
-								echo "class: ".$class."<br>";
-								echo "current_class: ".$current_class."<br>";*/
 							}
 						}
 					}
@@ -214,8 +203,6 @@ class base {
 						if($class_name != "" && $class_name != "app" && $class_name != "base" && !$this->is_loaded($class_name) && !$this->is_excluded($class_name)) { //
 							if($class_name != $current_class) {
 								$classes[$class_name] = true;
-								/*echo $line."<br>";
-								echo "class: ".$class_name."<br>";*/
 							}
 						}	
 					}
@@ -229,17 +216,17 @@ class base {
 		$autoload = array();
 		foreach($classes as $class => $active) {
 			array_push($this->loaded_classes, $class);
-			//echo '../base/'.$class.'.php';
 			$path = "";
 			if(file_exists('../base/'.$class.'.php')) {
 				$path = '../base/'.$class.'.php';
-				//require_once($path);	
 			} else if(file_exists($this->server_root.$this->project_root.'/class/'.$class.'.php')) {
 				$path = $this->server_root.$this->project_root.'/class/'.$class.'.php';
-				//require_once($path);		
 			} else {
-				$path = $this->server_root.$this->project_root.'/'.$class.'.php';
-				//require_once($path);
+				foreach($this->extended_directories as $extended_directory) {
+					if(file_exists('../'.$extended_directory.'/class/'.$class.'.php')) {
+						$path = '../'.$extended_directory.'/class/'.$class.'.php';
+					}
+				}
 			}
 			array_push($autoload, $path);
 		}	
@@ -253,16 +240,19 @@ class base {
 	}
 	
 	public function login($par) {
-		$query = "SELECT * FROM app.users WHERE email = '".$par['username']."'";
-		$row = $this->sql->get_row($query);
-		if(count($row) > 0 && $row['email'] == $par['username'] && password_verify($par['password'], $row['password'])) {
-			$this->set_user_id($row['id']);
-			//$this->store_session();
-			foreach($this->login_callbacks as $login_callback) {
-				$login_callback($par['username'], $par['password']);	
+		try {
+			$query = "SELECT * FROM app.users WHERE email = '".$par['username']."'";
+			$row = $this->sql->get_row($query, 1, NULL, true);
+			if(count($row) > 0 && $row['email'] == $par['username'] && password_verify($par['password'], $row['password'])) {
+				$this->set_user_id($row['id']);
+				foreach($this->login_callbacks as $login_callback) {
+					$login_callback($par['username'], $par['password']);	
+				}
+				return $row['id'];	
+			} else {
+				return -1;	
 			}
-			return $row['id'];	
-		} else {
+		} catch(Exception $e) {
 			return -1;	
 		}
 	}
@@ -274,7 +264,7 @@ class base {
 	
 	public function get_username($v) {
 		$query = "SELECT email FROM app.users WHERE id = ".$this->user_id;
-		$row = $this->sql->get_row($query);
+		$row = $this->sql->get_row($query, 1, NULL, true);
 		return $row['email'];
 	}
 	
@@ -286,30 +276,10 @@ class base {
 		}
 	}
 		
-	protected function set_user_id($user_id) {
+	public function set_user_id($user_id) {
 		$this->user_id = $user_id;
 		$_SESSION['user_id'] = $user_id;
-		/*foreach($this->modules as $module) {
-			$statement = "$this->appstat->set_user_id(".$this->user_id.");";
-			eval($statement);	
-		}*/
-		//$this->sql->set_user($this->user_id);
 	}
-	
-	/*public function register($v) {
-		$query = "SELECT COUNT(*) as count FROM users WHERE email = '".$v['email']."'";
-		$count = $this->sql->get_row($query);
-		$count = $count['count'];
-		if($count == 0) {
-			$query = "INSERT INTO users (email, password) VALUES('".$v['email']."', '".$v['password']."')";
-			$this->sql->execute($query, true);
-			$user_id = mysql_insert_id();
-			$this->set_user_id($user_id);
-			$this->user_init();
-			return $user_id;
-		}
-		return -1;
-	}*/
 	
 	function validate_email($email) {
 		if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -329,37 +299,29 @@ class base {
 			
 	}
 	
-	public function get_app_state($id) {
-		$query = "SELECT * FROM app.app_state WHERE app_id = '".$this->app_id."' AND user_id = ".$this->user_id;
-		//$query = "SELECT * FROM app_state WHERE property = '".$id."'";
-		//return json_encode(mysql_fetch_array($this->sql->execute($query), MYSQL_ASSOC));
-		return $this->sql->json($query);
+	public function get_app_state() {
+		$query = "SELECT property, value FROM app.app_state WHERE app_id = '".$this->app_id."' AND user_id = ".$this->user_id;
+		return $this->sql->get_rows($query);
 	}
 	
-	public function submit_app_state($v) {
-		$app_state = json_decode($v['app_state']);
-		//var_dump($app_state);
+	public function submit_app_state($app_state) {
 		foreach($app_state as $state) {
 			$v = array();
 			$v['property'] = $state->property;
 			$v['value'] = $state->value;
-			//echo "value: ".$v['value']."<br>";
 			$this->set_app_state($v);	
 		}
 	}
 	
 	public function set_app_state($values) {
-		//if($values['value'] != 'undefined') {
-			$query = "DELETE FROM app.app_state WHERE app_id = '".$this->app_id."' AND property = '".$values['property']."' AND user_id = ".$this->user_id;
-			$this->sql->execute($query);
-			$query = "INSERT INTO app.app_state (property, value, app_id, user_id) VALUES('".$values['property']."', '".$values['value']."', '".$this->app_id."', ".$this->user_id.")";
-			echo $query;
-			$this->sql->execute($query);
-		//}
+		$query = "DELETE FROM app.app_state WHERE app_id = '".$this->app_id."' AND property = '".$values['property']."' AND user_id = ".$this->user_id;
+		$this->sql->execute($query);
+		$query = "INSERT INTO app.app_state (property, value, app_id, user_id) VALUES('".$values['property']."', '".$values['value']."', '".$this->app_id."', ".$this->user_id.")";
+		$this->sql->execute($query);
 	}
 	
 	public function assets() {
-		return implode(" ", array($this->_js_index(), $this->html_assets()));	
+		return implode(" ", array($this->_js_index()));	//, $this->html_assets()
 	}
 	
 	private $html_assign;
@@ -371,7 +333,6 @@ class base {
 		foreach($files as $file) {
 			if(strpos($file, "html") !== false) {
 				$location = $dir."/".$file;
-				//array_push($this->html_assign, $path."/".$file);
 				$asset_index = substr($file, 0, strpos($file, ".html"));
 				$file = fopen($location, "r");
 				$contents = fread($file, filesize($location));
@@ -389,16 +350,6 @@ class base {
 		$this->html_assign = array();
 		$output .= $this->get_html($this->project_root."/html");
 		$output .= $this->get_html("/html");
-		/*if(count($this->html_assign) > 0) {
-			$output .= " var html_assets = [";
-			$counter = 0;
-			foreach($this->html_assign as $path) {
-				$output .= ($counter > 0 ? ", " : "");
-				$output .= "'".$path."'";	
-				$counter++;
-			}
-			$output .= "]; ";
-		}*/
 		return $output;
 	}
 	
@@ -408,7 +359,8 @@ class base {
 		$files = scandir($dir);
 		$files = array_reverse($files);
 		foreach($files as $file) {
-			if(strpos($file, "js") !== false && $file != "base.js") {
+			$prefix = substr($file, 0, 1);
+			if($prefix != "." && strpos($file, "js") !== false && $file != "base.js") {
 				$location = $dir."/".$file;
 				$file = fopen($location, "r");
 				$contents = fread($file, filesize($location));
@@ -416,7 +368,7 @@ class base {
 				$path = substr($contents, 0, strpos($contents, "="));
 				array_push($this->root_assign, $path);
 				$output .= " ".$contents;
-			} else if(strpos($file, "_") !== false && is_dir($dir."/".$file)) {
+			} else if($prefix != "." && strpos($file, "_") !== false && is_dir($dir."/".$file)) {
 				$output .= $this->get_files($dir . DIRECTORY_SEPARATOR . $file);	
 			}
 		}
@@ -443,65 +395,19 @@ class base {
 	public function set_user(&$values) {
 		$values['user_id'] = $this->user_id;	
 	}
-		
-	
-	/*public function print_colors() {
-		$colors = $this->get_colors();
-		$return_string = "";
-		$return_string .= "[";
-		foreach($colors as $color) {
-			$return_string .= "'".$color."', ";	
-		}
-		$return_string .= "]";
-		return $return_string;
-	}*/
 	
 	public function get_apps($v) {
 		$query = "SELECT * FROM app.apps WHERE disabled != 1 ORDER BY app_title";
 		return $this->sql->json($query);	
 	}
 	
-	
-	public function home_panels($v) {
-		$query = "SELECT * FROM app.home_panels WHERE user_id = ".$this->user_id;
-		return $this->sql->json($query);	
-	}
-	
-	public function home_panel($v) {
-		//$this->set_user($v);
-		//$statement = new statement($v, NULL, "app.home_panels");
-		$this->statement->generate($v, NULL, "app.home_panels");
-		$this->sql->execute($this->statement->get());
-	}
-	
-	public function home_screen($v) {
-		$query = "SELECT id FROM home_screen WHERE user_id = ".$this->user_id;
-		$row = $this->sql->get_row($query);
-		$id = $row['id'];
-		$v['id'] = $id;
-		$this->statement->generate($v);
-		$this->sql->execute($this->statement->get());
-		$query = "SELECT modified FROM home_screen WHERE id = ".$id;
-		$row = $this->sql->get_row($query);
-		return $row['modified'];
-	}
-	
-	public function get_home_screen($modified) {
-		$query = "SELECT modified FROM home_screen WHERE user_id = ".$this->user_id;
-		$row = $this->sql->get_row($query);
-		$last_modified = $row['modified'];
-		if($modified != $last_modified) {
-			return $this->home_panels(NULL);	
-		}
-		return json_encode(array());
-	}
-	
 	function _user_group_member($group_name, $group_id=NULL) {
+		$group_name = strtolower($group_name);
 		if($this->user_id == -1) {
 			return 0;	
 		}
 		if($group_id == NULL) {
-			$query = "SELECT id FROM app.user_groups WHERE group_name = '".$group_name."'";
+			$query = "SELECT id FROM app.user_groups WHERE LOWER(group_name) = '".$group_name."'";
 			$group_id = $this->sql->get_row($query)['id'];
 		}
 		if($group_name == NULL) {
@@ -509,7 +415,9 @@ class base {
 			$group_name = $this->sql->get_row($query)['id'];	
 		}
 		if(strtolower($group_name) == "users") {
-			if($this->user_id != -1) {
+			if(!isset($this->user_id)) {
+				return 0;
+			} else if($this->user_id != -1) {
 				return 1;	
 			}
 		} else {
@@ -529,53 +437,33 @@ class base {
 		}
 	}
 	
-}
-
-/*class text {
-	private $sql;
-	private $app;
-	
-	function __construct($app) {
-		$this->app = $app;
-		$this->sql = new mysql("app");	
-	}
-	
-	function get_app_id($name) {
-		$query = "SELECT id FROM app WHERE app_title = '".$name."'";
-		$row = $this->sql->get_row($query);
-		return $row['id'];	
-	}
-	
-	function new_text($tag) {
-		$query = "INSERT INTO text (tag) VALUES('".$tag."')";
-		$this->sql->execute($query);	
-	}
-}*/
-
-
-/*class color {
-	public function get_colors() {
-		$colors = array();
-		for($c_val = 0; $c_val < 30; $c_val += 5) { //10
-			//for($c_val2 = 0; $c_val2 < 50; $c_val2 += 10) {
-				for($c_val3 = 0; $c_val3 < 360; $c_val3 += 30) {
-					$rgb = "hsl(".($c_val3+$c_val).", 60%, 50%)";	 //c_val2
-					array_push($colors, $rgb);
+	function highest_user_group() {
+		$user_groups = array();
+		$id = 1;
+		while($id != -1) {
+			$query = "SELECT * FROM app.user_groups WHERE id = ".$id;
+			$user_group = $this->sql->get_row($query, 1);
+			$user_groups[] = $user_group;
+			$id = $user_group['parent_group_id'];
+		}
+		
+		$query = "SELECT user_group_id FROM app.user_user_groups WHERE user_id = ".$this->user_id;
+		$groups = $this->sql->get_rows($query, 1);
+		$highest_group = NULL;
+		
+		foreach($groups as $group) {
+			foreach($user_groups as $key => $user_group) {
+				if($group['user_group_id'] == $user_group['id'] && ($highest_group === NULL || $key > $highest_group)) {
+					$highest_group = $key;	
 				}
-			//}
+			}
 		}
-		//background-color:hsl(9, 100%, 64%);
-		return $colors;
+		if($highest_group === NULL) {
+			return "user";	
+		}
+		return strtolower($user_groups[$highest_group]['group_name']);	
 	}
 	
-	public function print_colors() {
-		$colors = $this->get_colors();
-		echo "[";
-		foreach($colors as $color) {
-			echo "'".$color."', ";	
-		}
-		echo "]";
-	}	
-}*/
+}
 
 ?>

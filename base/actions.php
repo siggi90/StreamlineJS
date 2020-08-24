@@ -22,21 +22,16 @@
 	if(isset($_REQUEST['action'])) {
 		$statement;
 		$action = $_REQUEST['action'];
-		$_POST = $_REQUEST;
+		//$_POST = $_REQUEST;
 		unset($_POST['action']);
-		unset($_POST['_ga']);
-		unset($_POST['_gid']);
-		unset($_POST['_gat']);
-		unset($_POST['_fbp']);
 		$app = new app();
 		
 		//if(isset($require_token) && $require_token === true && isset($app->cloud_api)) {
 		if(isset($app->cloud_api) && isset($_POST['_api_user_id'])) {
-			if(!$app->cloud_api->verify_token($_POST['_api_user_id'], $_POST['_api_token'])) {
-				//exit;	
-			}
+			$app->cloud_api->verify_token($_POST['_api_user_id'], $_POST['_api_token']);
+			unset($_POST['_api_user_id']);
+			unset($_POST['_api_token']);
 		}
-		//$appstat = $app->appstat;
 		
 		//echo $app->test();
 		//var_dump($_POST);
@@ -67,10 +62,13 @@
 			return $var;
 		}
 		
+		$action_last_character = substr(strrev($action), 0, 1);
 
 		foreach($_POST as $key => $value) {
 			$_POST[$key] = json($_POST[$key]);
-			$_POST[$key] = clean_var($_POST[$key], $connection);
+			if($action_last_character != "_") {
+				$_POST[$key] = clean_var($_POST[$key], $connection);
+			}
 			//echo "clean: ".$_POST[$key]."<br>";	
 		}
 		
@@ -164,13 +162,17 @@
 			}
 			if(isset($current_module->function_access)) {
 				foreach($current_module->function_access as $access_group => $group_functions) {
-					if($access_group != "inaccessible") {
-						foreach($group_functions as $group_function) {
-							if($group_function == $function) {
+					foreach($group_functions as $group_function) {
+						if($group_function == $function) {
+							if($access_group == "inaccessible" || $app->_user_group_member($access_group) != 1) {
+								$accessible = false;
+							}
+						} else if(strpos($group_function, "*") !== false) {
+							if($group_function == "*") {
 								if($app->_user_group_member($access_group) != 1) {
 									$accessible = false;
 								}
-							} else if(strpos($group_function, "*") !== false) {
+							} else {
 								$split = explode('*', $group_function)[0];
 								if(strpos($function, $split) !== false) {
 									if($app->_user_group_member($access_group) != 1) {
@@ -179,8 +181,6 @@
 								}
 							}
 						}
-					} else {
-						$accessible = false;	
 					}
 				}
 			}
@@ -193,6 +193,8 @@
 				} else {
 					echo $return;	
 				}
+			} else {
+				echo "-1";	
 			}
 		}
 	

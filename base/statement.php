@@ -38,7 +38,7 @@ class statement {
 				return "NOW()";
 				break;*/
 			default:
-				if((gettype($v) == 'string') && $v != "NOW()") { // && !is_numeric($v) // || (strpos($v, ":") != false) )"
+				if((gettype($v) == 'string') && $v != "NOW()" && $v != "NULL") { // && !is_numeric($v) // || (strpos($v, ":") != false) )"
 					foreach($this->value_callback as $value_callback) {
 						$v = $value_callback($v);	
 					}
@@ -49,9 +49,16 @@ class statement {
 		}
 	}
 	
+	private $database_prefix = NULL;
+	
 	function __construct($values=NULL, $type=NULL, $table=NULL) {
 		if($values != NULL) {
 			$this->generate($values, $type, $table);
+		}
+		global $config_global;
+				
+		if(isset($config_global['database_prefix'])) {
+			$this->database_prefix = $config_global['database_prefix'];
 		}
 	}
 	
@@ -71,7 +78,9 @@ class statement {
 		$this->value_callback[] = $callback;	
 	}
 	
-	public function generate(&$values, $table=NULL, $type=NULL, $escape=false) {
+	private $has_primary_id = false;
+	
+	public function generate(&$values, $table=NULL, $type=NULL, $escape=false, $allow_null=false) {
 		if(isset($values['id'])) {
 			if($values['id'] == "-1") {
 				unset($values['id']);	
@@ -98,9 +107,15 @@ class statement {
 				$db = $split[0];
 				$table = $split[1];	
 			}
-			$query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '".$db."' AND TABLE_NAME = '".$table."'";
-			//var_dump($this->sql->get_rows($query));
+			$db_inspect = $db;
+			if($this->database_prefix != NULL) {
+				$db_inspect = $this->database_prefix.$db_inspect;	
+			}
+			$query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '".$db_inspect."' AND TABLE_NAME = '".$table."'";
 			foreach($this->sql->get_rows($query) as $row) {
+				if($row['COLUMN_NAME'] == "id") {
+					$this->has_primary_id = true;	
+				}
 				if($row['COLUMN_NAME'] == 'user_id' && !isset($v['id'])) { //
 					if($this->user_id != -1 && !isset($values['user_id'])) {
 						$values['user_id'] = $this->user_id;
@@ -118,14 +133,24 @@ class statement {
 				} else if($row['COLUMN_NAME'] == 'password' && isset($values['password'])) {
 					$values['password'] = password_hash($values['password'], PASSWORD_DEFAULT);
 					//var_dump($values['password']);
-				}/* else if($row['COLUMN_NAME'] == 'id') {
+				} else if(strpos($row['COLUMN_NAME'], "_id") !== false && isset($values[$row['COLUMN_NAME']]) && $values[$row['COLUMN_NAME']] == "-1") {
+					if($allow_null == false) {
+						unset($values[$row['COLUMN_NAME']]);
+					} else {
+						$values[$row['COLUMN_NAME']] = "NULL";
+					}
+				}
+				
+				/* else if($row['COLUMN_NAME'] == 'id') {
 					if(!isset($values["id"])) {
 						$values["id"] = $this->sql->get_id($db.".".$table);	
 						$type = 1;
 					}
 				}*/
 			}
-			$table = $db.".".$table;
+			if($this->sql->_db != $db) {
+				$table = $db.".".$table;
+			}
 		}
 		if(isset($values['PHPSESSID'])) {
 			unset($values['PHPSESSID']);

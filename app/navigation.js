@@ -2,30 +2,57 @@ app.navigation = {
 	recent_hash: null,
 	hash_value: null,
 	last_hash_value: null,
+	state_set: false,
 	poll_hash: function() {
 		var branch = this;
 		var self = this;
 		var set_hash_value;
 		if(window.location.hash == "") {
-			if(typeof branch.root.definition.routes !== 'undefined') {
-				if(typeof branch.root.definition.routes.default_route !== 'undefined') {
-					if(branch.root.user_id == "-1" || typeof branch.root.user_id === 'undefined') {
-						set_hash_value = "#"+branch.root.definition.routes.default_route.everyone;	
-					} else {
-						set_hash_value = "#"+branch.root.definition.routes.default_route.user;
-					}
-				}
-			} else {
-				set_hash_value = "#index";	
-			}
-		}
-		if(typeof set_hash_value !== 'undefined') {
-			history.replaceState(undefined, undefined, set_hash_value)	
+			
 		}
 		if(window.location.hash != this.recent_hash) {
 			this.recent_hash = window.location.hash;
 			this.hash_value = this.recent_hash.substr(1);
-			this.open_tab();
+			if(!this.state_state) {
+				$.post(branch.root.actions, {
+					'action': 'get_state'	
+				}, function(state_data) {
+					branch.state_set = true;
+					//alert(state_data);
+					var old_user_group = branch.root.user_group;
+					for(var x in state_data) {
+						//alert(x);
+						//alert(state_data[x]);
+						branch.root[x] = state_data[x];
+					}
+					//continue_render(split_index);
+						//window.location.hash = "#";
+					if(window.location.hash == "") {
+						if(typeof branch.root.definition.routes !== 'undefined') {
+							if(typeof branch.root.definition.routes.default_route !== 'undefined') {
+								if(branch.root.user_id == "-1" || typeof branch.root.user_id === 'undefined') {
+									set_hash_value = "#"+branch.root.definition.routes.default_route.everyone;	
+								} else {
+									if(typeof branch.root.user_group !== 'undefined') {
+										set_hash_value = "#"+branch.root.definition.routes.default_route[branch.root.user_group];
+									} else {
+										set_hash_value = "#"+branch.root.definition.routes.default_route.user;
+									}
+								}
+							}
+						} else {
+							set_hash_value = "#index";	
+						}
+						if(typeof set_hash_value !== 'undefined') {
+							history.replaceState(undefined, undefined, set_hash_value)	
+						}
+					}
+					branch.open_tab();
+					branch.state_set = true;
+				}, "json");
+			} else {
+				branch.open_tab();	
+			}
 		}
 		setTimeout(function() {
 			self.poll_hash();
@@ -44,7 +71,6 @@ app.navigation = {
 		return get_data;
 	},
 	access_granted: true,
-	state_set: false,
 	$parse_render_frame: null,
 	parse_render: function(split, frame, $frame, id, get_data, frame_depth_offset) {
 		//function get_state() {
@@ -83,12 +109,18 @@ app.navigation = {
 							branch.$parse_render_frame = $frame;
 						}
 						var send_x = x+1;
+						branch.access_granted = true;
 						if(send_x < split.length) {
 							continue_render(send_x);
 						}
 					}
-					var page_object = branch.root.interpretation.find_page(page);		
-					function page_render() {
+					var page_object = null;
+					if(page.length > 0) {
+						page_object = branch.root.interpretation.find_page(page);
+					} else {
+						return;	
+					}
+					var page_render = function() {
 						if((typeof id !== 'undefined' && typeof page_object.no_get_data === 'undefined') || typeof page_object.no_get_id !== 'undefined') { // 
 							var post_data = {
 								'action': 'get_'+page,
@@ -100,7 +132,6 @@ app.navigation = {
 								}
 							}
 							$.post(branch.root.actions, post_data, function(data) {
-								console.log(data);
 								if(typeof get_data !== 'undefined') {
 									data.id = get_data.id;
 								}
@@ -109,12 +140,14 @@ app.navigation = {
 							}, "json");
 						} else {
 							branch.root.interpretation.render_page(page_object, frame, $frame, callback, get_data);
-						}
-							
+						}	
 					}
 					if(typeof page_object.user_access !== 'undefined' && page_object.user_access !== 'user' && page_object.user_access !== 'everyone') {
 						if(branch.root.user_id == -1) {
-							branch.access_granted = false;
+							branch.access_granted = false;					
+							branch.root.user_menu.login_callbacks.push(function() {
+								page_render();
+							});
 						} else {
 							$.post(branch.root.actions, {
 								action: '_user_group_member',
@@ -123,6 +156,9 @@ app.navigation = {
 								if(data == 1) {
 									page_render();	
 								} else {
+									/*branch.root.user_menu.login_callbacks.push(function() {
+										page_render();
+									});*/
 									//branch.access_granted = false;
 									branch.root.interpretation.view.pop_up.display("You do not have access to this page.", "fadeout");
 								}
@@ -130,14 +166,19 @@ app.navigation = {
 							});
 						}
 					} else {
-						page_render();	
 						if(typeof page_object.user_access !== 'undefined' && page_object.user_access == 'user') {
-							//alert(branch.root.user_id);
 							if(branch.root.user_id == -1) {
 								branch.access_granted = false;
+								branch.root.user_menu.login_callbacks.push(function() {
+									page_render();
+								});
+							} else {						
+								page_render();	
 							}
+						} else {
+							page_render();	
 						}
-					}
+					};
 				}(frame, branch.$parse_render_frame, split[x], get_data));
 				
 			//}
@@ -148,7 +189,7 @@ app.navigation = {
 				}
 				//alert(branch.root.interpretation.bottom_frame.__default_page);
 			} else {*/
-			if(x == split.length-1) {
+			if(x == split.length-1 || !branch.access_granted) {
 				if(branch.access_granted) {
 					branch.root.user_menu.remove_login_overlay();
 				} else {
@@ -162,7 +203,7 @@ app.navigation = {
 			//}
 		};
 		
-		if(!branch.state_set) {
+		/*if(!branch.state_set) {
 			$.post(branch.root.actions, {
 				'action': 'get_state'	
 			}, function(state_data) {
@@ -178,7 +219,8 @@ app.navigation = {
 			//alert('test');
 		} else {
 			continue_render(split_index);	
-		}
+		}*/
+		continue_render(split_index);	
 	},
 	search_initialized: false,
 	open_tab: function() {
@@ -337,9 +379,9 @@ app.navigation = {
 		}
 		var last_hash_split = this.hash_value.split("/");
 		last_hash_split[last_hash_split.length-1] = page_id;
-		if(send_data.length > 0) {
+		//if(send_data.length > 0) {
 			last_hash_split[last_hash_split.length-1] += '#';
-		}
+		//}
 		
 		
 		var counter = 0;

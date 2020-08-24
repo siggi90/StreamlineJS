@@ -745,9 +745,10 @@ var base = {
 				$('#user_name.user_name').html(data);
 			});
 		},
+		login_callbacks: Array(),
 		init: function(callback) {
 			var branch = this;
-			$('#body').click(function() {
+			/*$('#body').click(function() {
 				$('.console').addClass('console_back');
 				$('.body_container').removeClass('blur');
 				$('#body').animate({
@@ -766,7 +767,7 @@ var base = {
 						'display': 'none'
 					});
 				});
-			});
+			});*/
 			$('#overview_button').click(function() {
 				$('.console').removeClass('console_back');
 				$('.body_container').addClass('blur');
@@ -889,10 +890,10 @@ var base = {
 				}, function(data) {
 					if(data != "-1") {
 						branch.root.user_id = data;		
-						branch.root.navigation.recent_hash = "";
-						branch.root.navigation.poll_hash();
+						/*branch.root.navigation.recent_hash = "";
+						branch.root.navigation.poll_hash();*/
 						$('.console').addClass('console_back');
-						$('.body_container').removeClass('blur');
+						/*$('.body_container').removeClass('blur');
 						$('.login').animate({
 							'opacity': "0"
 						}, 2500, 'easeOutQuart', function() {
@@ -908,16 +909,24 @@ var base = {
 								'opacity': '0',
 								'display': 'none'
 							});
-						});
+						});*/
+						branch.remove_login_overlay();
 						branch.get_username();
 						if(typeof callback !== 'undefined') {
 							callback();
 						}
+						for(var x in branch.login_callbacks) {
+							branch.login_callbacks[x]();	
+						}
 					}
 				});
 			});
+			$('.sign_up_button').click(function() {
+				$('.back').click();
+			});
 			$('button.learn_more').click(function() {
 				document.location.href = '/account/#sign_up';
+				branch.remove_login_overlay();
 			});
 			$.post(this.root.actions, {
 				action: 'get_user_id'	
@@ -927,32 +936,13 @@ var base = {
 					branch.root.navigation.poll_hash();
 				}
 				if(data == "-1") {
-					$('.logged_in_options').hide();
-					$('.logged_out_options').show();
-					
-					if(typeof branch.definition === 'undefined') {
+					//$('.logged_in_options').hide();
+					//$('.logged_out_options').show();
+					if(typeof branch.root.definition.preferences !== 'undefined' && typeof branch.root.definition.preferences.app_login !== ' undefined' && branch.root.definition.preferences.app_login == true) {
 						branch.display_login_overlay();
 					}
-					/*$('.overlay_black').css({
-						'opacity': '0',
-						'display': 'block'
-					}).animate({
-						'opacity': "1"
-					}, 700, 'easeInOutCirc', function() {
-						
-					});
-					setTimeout(function() {
-						$('.login').css({
-							'opacity': '0',
-							'display': 'block'
-						}).	animate({
-							'opacity': "1"
-						}, 300, 'easeInOutExpo');
-					}, 100);*/
 				} else {	
-					$('.logged_in_options').show();
-					$('.logged_out_options').hide();
-					if(typeof branch.definition === 'undefined') {
+					if(typeof branch.root.definition.preferences !== 'undefined' && typeof branch.root.definition.preferences.app_login !== ' undefined' && branch.root.definition.preferences.app_login == true) {
 						branch.remove_login_overlay();
 					}
 					if($('.console').length > 0) {
@@ -969,6 +959,11 @@ var base = {
 		remove_login_overlay: function() {
 			var branch = this;
 			if(!this.remove_in_progress) {
+				if(branch.root.user_id != -1) {
+					$('.logged_in_options').show();
+					$('.logged_out_options').hide();
+				}
+				
 				this.remove_in_progress = true;
 				if($('.body_container').hasClass('blur')) {
 					$('.body_container').removeClass('blur');
@@ -993,28 +988,26 @@ var base = {
 			}
 		},
 		display_login_overlay: function() {
-			//if(!$('.body_container').hasClass('blur')) {
-				$('.body_container').addClass('blur');
-				$('.overlay_black').css({
-					'opacity': '0',
-					'display': 'block'
-				}).animate({
-					'opacity': "1"
-				}, 1000, 'easeInOutQuad', function() {
+			$('.logged_in_options').hide();
+			$('.logged_out_options').show();
+			$('.body_container').addClass('blur');
+			$('.overlay_black').css({
+				'opacity': '0',
+				'display': 'block'
+			}).animate({
+				'opacity': "1"
+			}, 1000, 'easeInOutQuad', function() {
+				
+			});
+			
+			$('.login').css({
+				'display': 'block',
+				'opacity': '0'
+			}).animate({
+				'opacity': "1"
+			}, 1500, 'easeInQuart', function() {
 					
-				});
-				
-				$('.login').css({
-					'display': 'block',
-					'opacity': '0'
-				}).animate({
-					'opacity': "1"
-				}, 1500, 'easeInQuart', function() {
-						
-				});
-				
-				
-			//}
+			});
 		}
 	}
 };

@@ -333,8 +333,9 @@ class calendar {
 		return $return_object;
 	}
 	
-	function month($popover=false, $_year='',  $_month='', $day='', $day_class='', $small_view=false) {		
+	function month($_year='', $_month='', $day='', $day_class='', $small_view=false) {		
 		$o = "";
+		$popover = false;
 		/*$o = "
 		<div style='height:50%;' class='no_touch' id='calendar_view_wrapper'>
 		<div class='sv_cal_popover_info'>
@@ -363,6 +364,7 @@ class calendar {
 		</div>"*/
 
 		//."<div class='arrow-down'></div></div>";
+		
 		$date = getdate();
 		$day_today = date('d');
 		$month = $_month;
@@ -391,8 +393,8 @@ class calendar {
 		}
 		if(!$popover) {
 			$o .= "<div style='position:relative'>
-			<div style='position:absolute; top:20px; left:20px; font-size:20px;'><span style='' class='prev_month pointer change_month noselect' month='".$prevmonth."' year='".$year_prev."'>&lt;</span></div>
-			<div style='position:absolute; top:20px; right:20px; font-size:20px;'><span style='' class='next_month change_month pointer noselect'  month='".$nextmonth."' year='".$year_next."'>&gt;</span></div>
+			<div style='position:absolute; top:20px; left:20px; font-size:20px;'><span style='' class='prev_month pointer change_month noselect' month='".$prevmonth."' year='".$year_prev."'><i class='icofont-thin-left'></i></span></div>
+			<div style='position:absolute; top:20px; right:20px; font-size:20px;'><span style='' class='next_month change_month pointer noselect'  month='".$nextmonth."' year='".$year_next."'><i class='icofont-thin-right'></i></span></div>
 			</div>";
 		}
 		
@@ -411,7 +413,7 @@ class calendar {
 		$o .= "<div id='calendar_view' class='calendar_grid'>";
 		$counter=1;
 		$rowcount = 0;
-		$o .= "<div class='divTable'><div class='divRow'>";
+		$o .= "<div class='divTable table_header'><div class='divRow calendar_days_row'>";
 		$counter=0;
 		$offset = 0;
 		while($counter<7) {
@@ -431,7 +433,7 @@ class calendar {
 		}
 		$counter=1;
 		//$o .= "</div><div class='divTable2'>";
-		$o .= "<div class='divRow'>";
+		$o .= "</div><div class='divTable'><div class='divRow'>";
 		$extra_class = '';
 		$c_extra = 0;
 		while($counter<=$offset) {
@@ -441,13 +443,13 @@ class calendar {
 			} else {
 				$extra_class = '';
 			}
-			$newDate = '';
 			$past_month = ($month-1);
 			$past_year = $year;
 			if($past_month == 0) {
 				$past_month = 12;
 				$past_year = intval($past_year)-1;
 			}
+			$newDate = $past_year."-";
 			if(strlen($past_month)==1) {
 				$newDate .= '0'.$past_month;
 			} else {
@@ -458,10 +460,11 @@ class calendar {
 				$newDate .= '0'.$d;
 			} else {
 				$newDate .= $d;
-			}
-			$newDate .= '-'.$past_year; 
+			}			//$newDate .= '-'.; 
 			//onclick=\"nytt_event_click('".$newDate."')\"
-			$o .= "<div class='divcell2 calendar_cell day_$newDate' $extra_class ><div style='position:relative; height:100%;'><div onclick='pick_date(\"".$year."-".$month."-".$d."\")' class='day_counter ".$day_class."'>$d</div>";
+			$o .= "<div id='day_$newDate' class='divcell2 calendar_cell day_$newDate'  ><div class='day_counter'>$d</div>";
+			
+//onclick='pick_date(\"".$year."-".$month."-".$d."\")' 
 
 			$day_start = $newDate.' 00:00';
 			$day_end = $newDate.' 23:59';
@@ -473,34 +476,8 @@ class calendar {
 			$class = '';
 			$top=20;
 
-			/*foreach($results as $r) {
-				$onclick_property = "onclick='view_event(".$r['id'].")'";
-				if($r['createdby'] == $_SESSION['session_user']->get_kt()) {
-					$onclick_property = "onclick='nyr_vidburdur(".$r['id'].", null, event)'";
-					//$onclick_property 
-					//onmousedown=\"drag_event(".$r['id'].")\"
-					//onmouseup=\"\"
-				}
-				$time_display = "<span style='color:#555; margin-left:0px; margin-right:0px; padding-right:5px;'>".extract_time($r['event_time'])."</span>";
-				if($r['no_time_event'] == 't') {
-					$time_display = "<span style='font-size:6px; color:#DDD; margin-left:2px;'><i class='fa fa-circle' style='position:relative; top:-1px; margin-right:4px;'></i></span>";
-				}
-				$o .= "<div id='sv_cal_event_".$r['id']."' class='truncate $class truncate_generic' style='position:absolute; height:18px; width:auto; right:0px; padding-left:8px; top:".$top."px; left:0px; text-align:left; color:#DDD; width:auto;'>
-				<a 
-				onclick=\"popover_display_event(".$r['id'].", '".$newDate."', event)\"
-				href='javascript:void(null)' style='color:#DDD;'>
-				"
-				.$time_display
-				.""
-				.$r['title']."</a></div>";
-				$top += 15;
-				if($c >= 2) {
-					$class = '_hidden_until_fullscreen';
-				}
-				$c++;
-			}*/
 
-			$o .= "</div></div>";
+			$o .= "<div class='events'></div></div>";
 			$counter++;
 			$c_extra++;
 		}
@@ -527,7 +504,9 @@ class calendar {
 			/*if($counter == $day_today) {
 				$style = 'color:#333';
 			}*/
-			$newDate = '';
+			
+			$newDate =  $year.'-'; 
+
 			if(strlen($month)==1) {
 				$newDate .= '0'.$month;
 			} else {
@@ -539,7 +518,6 @@ class calendar {
 			} else {
 				$newDate .= $counter;
 			}
-
 			$class_today = '';
 			$class_today_elements = '';
 			if($counter == date('j') && $month == date('n') && $year == date('Y')) {
@@ -551,11 +529,11 @@ class calendar {
 			//$onclick = "onclick=\"nytt_event_click('".$newDate."')\"";
 			//onclick=\"nytt_event_click('".$newDate."')\"
 			$onclick = "";
-			$newDate .= '-'.date('Y'); 
-			$o .= "<div class='divCell calendar_cell day_$newDate $class_today' 
+			$o .= "<div id='day_$newDate' class='divCell calendar_cell day_$newDate $class_today' 
 			 style='".$style.$extra_class."'
-			><div style='position:relative; height:100%;'>
-			<div unselectable='on' onclick='pick_date(\"".$year."-".$month."-".$counter."\")' class='day_counter $day_class $class_today_elements'>$counter</div>";
+			>
+			<div class='day_counter'>$counter</div>";
+			// onclick='pick_date(\"".$year."-".$month."-".$counter."\")' 
 
 			$day_start = $newDate.' 00:00';
 			$day_end = $newDate.' 23:59';
@@ -597,7 +575,7 @@ class calendar {
 			if($c > 0) {
 				//$o .= "<div class='_calendar_more truncate_generic' $onclick style='position:absolute; bottom:-15px; font-size:9px; left:0px; right:0px; text-align:center;'>meira...</div>";
 			}
-			$o .= "</div></div>";
+			$o .= "<div class='events'></div></div>";
 			$counter++;
 			$break_count++;
 			$extra_class = '';
@@ -612,7 +590,7 @@ class calendar {
 					$future_year = intval($future_year)+1;
 				}
 
-				$newDate = '';
+				$newDate =  $future_year.'-'; 
 				if(strlen($future_month)==1) {
 					$newDate .= '0'.$future_month;
 				} else {
@@ -624,11 +602,12 @@ class calendar {
 				} else {
 					$newDate .= $counter;
 				}
+				//$newDate .=
 				//$onclick = "onclick=\"nytt_event_click('".$newDate."')\"";
 				$onclick = "";
-				$o .= "<div class='divcell2 calendar_cell '><div style='position:relative; height:100%;'><div onclick='pick_date(\"".$year."-".$month."-".$counter."\")' class='day_counter ".$day_class."'>$counter</div>";
-
-				$newDate .= '-'.$future_year; 
+				$o .= "<div id='day_$newDate' class='divcell2 calendar_cell '><div class='day_counter ".$day_class."'>$counter</div>";
+				// onclick='pick_date(\"".$year."-".$month."-".$counter."\")' 
+				
 				$day_start = $newDate.' 00:00';
 				$day_end = $newDate.' 23:59';
 				/*$query = "SELECT * FROM calendar WHERE event_time = '".$newDate."' OR (event_time BETWEEN '".$day_start."' AND '".$day_end."') OR ('".$newDate."' BETWEEN event_time AND dags_til) ORDER BY no_time_event DESC, event_time DESC";
@@ -664,7 +643,7 @@ class calendar {
 					$c++;
 				}*/
 
-				$o .= "</div></div>";
+				$o .= "<div class='events'></div></div>";
 				$counter++;
 				$break_count++;
 			}

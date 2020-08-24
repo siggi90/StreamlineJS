@@ -105,6 +105,9 @@ app.easings = {
 		var ease_out_x_2 = bezier(0.02, 1, 0, 0.97);
 		var ease_out_x_3 = bezier(0.02, 1, 0.76, 0.99);
 		var ease_out_x_4 = bezier(0.64, 0.14, 0.23, 0.73);
+		var ease_out_x_5 = bezier(0.76, 0.36, 0.26, 0.66);
+		var ease_out_x_6 = bezier(0.31, 0.76, 0.35, 0.68);
+		var ease_out_x_7 = bezier(0.09, 0.84, 0.48, 0.97);
 		
 		$.extend($.easing,
 		{
@@ -147,6 +150,18 @@ app.easings = {
 			ease_out_x_4: function (x, t, b, c, d) {
 			   //return c*(t/=d)*t + b;
 			   return c*ease_out_x_4(t/=d)+b; 
+			},
+			ease_out_x_5: function (x, t, b, c, d) {
+			   //return c*(t/=d)*t + b;
+			   return c*ease_out_x_5(t/=d)+b; 
+			},
+			ease_out_x_6: function (x, t, b, c, d) {
+			   //return c*(t/=d)*t + b;
+			   return c*ease_out_x_6(t/=d)+b; 
+			},
+			ease_out_x_7: function (x, t, b, c, d) {
+			   //return c*(t/=d)*t + b;
+			   return c*ease_out_x_7(t/=d)+b; 
 			},
 			ease_in_out_x: function (x, t, b, c, d) {
 				if ((t/=d/2) < 1) return c/2*t*Math.pow(t, 1.5) + b;

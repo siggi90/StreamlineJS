@@ -17,7 +17,6 @@ app.interpretation = {
 			eval(statement);
 			switch(type) {
 				default:
-					console.log(send_data);
 					element.operation.load(send_data);	
 					break;
 			}
@@ -39,12 +38,30 @@ app.interpretation = {
 		},
 		loaded_callbacks: Array(),
 		render_completed_count: 0,
+		dependencies_set: 0,
 		loaded_count: 0,
 		loading_completed: false,
 		loaded: function() {
-			var branch = this;
 			if(!this.loading_completed) {
 				this.loaded_count++;
+			}
+			if(this.dependencies_set == this.render_completed_count) {
+				this.do_load();
+			}
+		},
+		dependency_set: function() {
+			this.dependencies_set++;
+			if(this.dependencies_set == this.render_completed_count) {
+				this.do_load();
+			}
+		},
+		do_load: function() {
+			var branch = this;
+			if(this.loading_completed) {
+				return false;	
+			}
+			//if(!this.loading_completed) {
+				//this.loaded_count++;
 				//alert(this.loaded_count+" - "+this.render_completed_count);
 				if(this.loaded_count == this.render_completed_count) {
 					/*if(branch.$container.find('.menu_top_container').children().length == 0) {
@@ -101,7 +118,7 @@ app.interpretation = {
 					//alert('loaded'+branch.current_page.id);
 					this.loading_completed = true;
 				}
-			}
+			//}
 		},
 	},
 	current_render_frame: null,
@@ -142,6 +159,9 @@ app.interpretation = {
 				}
 				page.title = page_data.title;
 			}
+		}
+		if(typeof page_data == 'undefined') {
+			page_data = {};	
 		}
 		/*if(typeof page.title_fetch !== 'undefined' && page.title_fetch == true) {
 			$.post(this.root.actions, {
@@ -221,7 +241,7 @@ app.interpretation = {
 		var $logo_element = $('#'+page.id+' .logo').first();
 		if(typeof page.title_link !== 'undefined') {
 			var title_href = branch.root.navigation.generate_href(page.title_link);
-			$title_element.wrap("<a href='"+title_href+"'></a>");	
+			$title_element.html("<a href='"+title_href+"'>"+page.title+"</a>");	
 			$logo_element.wrap("<a href='"+title_href+"'></a>");	
 		}
 		/*alert(frame);
@@ -257,6 +277,48 @@ app.interpretation = {
 					style_requirment = "display:none;";	
 				}
 				switch(content_item.type) {
+					case "function_call":
+						$container.append("<div class='function_call content_light' id='function_"+content_item.id+"'><button class='button' style='width:unset'>"+content_item.value+"</button><div style='display:none;' class='loading_spinner'><div><i class='icofont-spinner-alt-2'></i></div></div></div>");
+						var $function_button = $container.find('#function_'+content_item.id).first();
+						$function_button.find('.button').first().click(function() {
+							$(this).hide();
+							var $this = $(this);
+							$function_button.find('.loading_spinner').show();
+							$.post(branch.root.actions, {
+								'action': content_item.action
+							}, function(data) {
+								setTimeout(function() {							
+									$function_button.find('.loading_spinner').hide();
+									$this.show();
+								}, 1000);
+							});
+						});
+						branch.loaded_objects[page.id].loaded();
+						break;
+					case "status":
+						var icon = "icofont-cloudapp";
+						if(typeof content_item.icon !== 'undefined') {
+							icon = content_item.icon;	
+						}
+						$container.append("<div class='status content_light' id='"+content_item.id+"'><div><div class='status_icon'><i class='"+icon+"'></i></div><div class='status_name'>"+content_item.name+"</div></div><br><div><div class='status_message'></div></div></div>");
+						var $status_element = $container.find('#'+content_item.id).first();
+						var status_object = {
+							load: function() {
+								$.post(branch.root.actions, {
+									'action': content_item.id+"_status"
+								}, function(data) {
+									if(data == 1) {
+										$status_element.find('.status_message').html(content_item.status_message_true).css('color', '#fff');
+									} else {
+										$status_element.find('.status_message').html(content_item.status_message_false).css('color', '#000');
+									}
+								});
+							}
+						};
+						status_object.load();
+						$content_item_element = $status_element;
+						branch.loaded_objects[page.id].loaded();
+						break;
 					case "image":
 						var id = content_item.id;
 						var value;
@@ -349,7 +411,6 @@ app.interpretation = {
 												var target_object = branch.root.elements.find_element_object(item_object);
 												var $target_element = target_object.$element.find('#'+item_property);															
 												var value = $target_element.val();
-												alert(value);
 												post_data[y] = value;
 											}
 										}
@@ -570,13 +631,11 @@ app.interpretation = {
 								}
 								$menu_container.append("<div class='menu_button "+item.id+"_button' id='"+item.id+"_button'><a>"+title+"</a></div>");	
 							}
-							
 							var content = content_item.content_parsed;
 							$menu_container.children().each(function(index) {
 								var menu_data = content[index];
 								$(this).find('a').first().attr('href', branch.root.navigation.generate_href(menu_data.id, null, null, null, content_item.target));
 							});
-							
 							for(var i in custom_pages) {
 								var item = custom_pages[i];
 								$menu_container.append("<div class='menu_button "+item.id+"_button' id='"+item.id+"_button'><a>"+item.title+"</a></div>");
@@ -669,7 +728,7 @@ app.interpretation = {
 						var list_operation = {
 							offset: 0,
 							$list: $list,
-							load: function(search_term, send_data) {
+							load: function(send_data, search_term) {
 								var self = this;
 								/*if(typeof no_refresh === 'undefined') {
 								}*/
@@ -715,15 +774,26 @@ app.interpretation = {
 										}
 									}
 									for(var x in data) {
-										var list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id) ;
+										var list_item_href = "";
+										if(typeof content_item.click !== 'undefined') {
+											list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id);
+										}
 										var row_item = "<div class='list_item' id='"+data[x].id+"'>";
 										if(typeof data[x].title !== 'undefined') {
-											row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
+											if(list_item_href != "") {
+												row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
+											} else {
+												row_item += "<div class='title list_element'>"+data[x].title+"</div>";
+											}
 											delete data[x].title;
 										}
 										if(typeof data[x].image !== 'undefined') {
 											//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
-											row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
+											if(list_item_href != "") {
+												row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
+											} else {
+												row_item += "<img src='"+image_root+"/"+data[x].image+"' class='max_original_size' />";
+											}
 											delete data[x].image;
 										}
 										var line_clamp = "";
@@ -731,7 +801,7 @@ app.interpretation = {
 											line_clamp = "line_clamp";
 										}
 										if(typeof data[x].content !== 'undefined') {
-											row_item += "<div class='content list_element "+line_clamp+"' style='padding-bottom: 20px;'>"+data[x].content+"</div>";
+											row_item += "<div class='content list_element "+line_clamp+"'>"+data[x].content+"</div>";
 											delete data[x].content;
 										}
 										delete data[x].id;
@@ -838,7 +908,7 @@ app.interpretation = {
 												$(this).hide();	
 											}
 										});*/							
-										list_operation.load(search_term);
+										list_operation.load(null, search_term);
 									} else {
 										/*$list.find('.list_item').each(function() {
 											$(this).show();
@@ -944,7 +1014,6 @@ app.interpretation = {
 								var index_dropped = order_values.indexOf(dropped_value);
 								order_values.splice(index_dropped, 0, dragged_value);
 								
-								console.log(order_values);
 								$.post(branch.root.actions, {
 									'action': content_item.id+'_set_order',
 									'v': JSON.stringify(order_values)
@@ -1015,14 +1084,14 @@ app.interpretation = {
 											}	
 													
 											if(typeof content_item.edit !== 'undefined') {
-												row_item += "<div id='edit_button' class='action table_column' style=''>action</div>";	
+												row_item += "<div id='edit_button' class='action table_column' style=''>Action</div>";	
 											}				
 											if(typeof content_item.delete !== 'undefined') {
-												row_item += "<div id='delete_button' class='action table_column' style=''>action</div>";	
+												row_item += "<div id='delete_button' class='action table_column' style=''>Action</div>";	
 											}			
 											if(typeof content_item.custom_actions !== 'undefined') {
 												for(var x in content_item.custom_actions) {
-													row_item += "<div id='custom_action' class='custom_action table_column' style=''>action</div>";
+													row_item += "<div id='custom_action' class='custom_action table_column' style=''>Action</div>";
 												}
 											}
 											row_item += "</div></div>";	
@@ -1142,12 +1211,20 @@ app.interpretation = {
 																var href_data_index = content_item.custom_actions[action_name].href_data[i];
 																send_data[i] = data[href_data_index];	
 															}
-															href = branch.root.navigation.navigate_to(content_item.custom_actions[action_name].target_href, send_data, true);
+															if(content_item.custom_actions[action_name].target_href !== 'self') {
+																href = branch.root.navigation.navigate_to(content_item.custom_actions[action_name].target_href, send_data, true);
+															} else {
+																	
+															}
+														}
+														var action_value = action_name;
+														if(typeof content_item.custom_actions[action_name].value !== 'undefined') {
+															action_value = content_item.custom_actions[action_name].value;
 														}
 														if(href == "") {
-															$row.append("<div id='custom_action' class='custom_action table_column'>"+action_name+"</div>");
+															$row.append("<div id='custom_action' class='custom_action table_column'>"+action_value+"</div>");
 														} else {
-															$row.append("<div id='custom_action' class='custom_action table_column'><a href='"+href+"'>"+action_name+"</a></div>");	
+															$row.append("<div id='custom_action' class='custom_action table_column'><a href='"+href+"'>"+action_value+"</a></div>");	
 														}
 														/*$row.find('.delete_button').click(function() {
 															var post_data = {
@@ -1443,7 +1520,11 @@ app.interpretation = {
 								(function(form_element, form_object) {
 									switch(form_element.type) {
 										case 'date':
-											$form.append("<div class='form_element'><input type='date' id='"+form_element.id+"' class='form_input' value='' /></div>");
+											var caption = "";
+											if(typeof form_element.caption !== 'undefined') {
+												caption = "<div class='caption'>"+form_element.caption+"</div>";	
+											}
+											$form.append("<div class='form_element'>"+caption+"<input type='date' id='"+form_element.id+"' class='form_input' value='' /></div>");
 											$input = $form.find('#'+form_element.id).first();
 											if(typeof form_element.default_value !== 'undefined') {
 												var date = new Date();
@@ -1496,7 +1577,13 @@ app.interpretation = {
 										case 'text':
 											$form.append("<div class='form_element'><input type='text' id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"' /></div>");
 											$input = $form.find('#'+form_element.id).first();
-											
+											if(form_element.id == 'username' || form_element.id == 'email') {
+												$input.on('keypress', function(e) {
+													if(e.which == 32){
+														return false;
+													}
+												});	
+											}
 											break;
 										case 'password':
 											$form.append("<div class='form_element'><input type='password' maxlength='20' id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"' /></div>");
@@ -1693,6 +1780,12 @@ app.interpretation = {
 											//}
 										});
 									}
+									if(typeof form_element.disabled !== 'undefined') {
+										$input.attr('disabled', 'true');	
+									}
+									if(typeof form_element.allow_empty !== 'undefined' && form_element.allow_empty === true) {
+										$input.addClass('allow_empty');	
+									}
 									if(typeof form_element.ignore_reset !== 'undefined' && form_element.ignore_reset == true) {
 										$input.addClass('ignore_reset');	
 									}
@@ -1767,7 +1860,7 @@ app.interpretation = {
 											if($(this).hasClass('invalid')) {
 												valid = false;	
 											}
-											if(($(this).val() == "" || $(this).val() == "-1") && !$(this).hasClass('optional_field') && !(id_set && $(this).hasClass('unrequired_on_edit'))) {												
+											if(($(this).val() == "" || $(this).val() == "-1") && !$(this).hasClass('allow_empty') && !$(this).hasClass('optional_field') && !(id_set && $(this).hasClass('unrequired_on_edit'))) {												
 												valid = false;	
 											}
 										}
@@ -1798,7 +1891,8 @@ app.interpretation = {
 										}
 									});
 									var $save = $(this);
-									$.post(branch.root.actions, submit_data, function(data) {
+									
+									var submit_callback = function(data) {
 										$form.find('#id').first().val(data).trigger('change');
 										if(data == -1) {
 											form_object.operation.load();
@@ -1833,14 +1927,27 @@ app.interpretation = {
 												branch.root.user_id = data;	
 											}
 										}*/
-										if(typeof content_item.redirect !== 'undefined') {
+										if(typeof content_item.redirect !== 'undefined' && data != -1) {
 											document.location.href = content_item.redirect;
 										}
-										$save.addClass('saved');
-										setTimeout(function() {
-											$save.removeClass('saved');
-										}, 500);
-									});
+										if(data != -1) {
+											$save.addClass('saved');
+											setTimeout(function() {
+												$save.removeClass('saved');
+											}, 500);
+										} else {
+											$save.addClass('submit_error');
+											setTimeout(function() {
+												$save.removeClass('submit_error');
+											}, 500);
+										}
+									};
+									if(typeof content_item.custom_action !== 'undefined') {
+										var statement = "branch.root."+content_item.custom_action+"(submit_data, submit_callback)";
+										eval(statement);	
+									} else {
+										$.post(branch.root.actions, submit_data, submit_callback);
+									}
 								});
 							}
 							if(typeof content_item.new !== 'undefined') {
@@ -1873,7 +1980,9 @@ app.interpretation = {
 								form_object.operation.load();
 								if(typeof content_item.get_load_mask !== 'undefined') {
 									for(var x in content_item.get_load_mask) {
-										$form.find('#'+content_item.get_load_mask[x]).val(page_data[x]);	
+										if(typeof page_data[x] !== 'undefined') {
+											$form.find('#'+content_item.get_load_mask[x]).val(page_data[x]);
+										}
 									}
 								}
 								
@@ -2074,18 +2183,30 @@ app.interpretation = {
 								link = link.split(".");
 								var form = link[0];
 								var form_element = link[1];
-								var form_object = branch.root.elements.forms[form];
-								var $linked_form = form_object.$element;
-								var $linked_element = $linked_form.find('#'+form_element).first();
-								$linked_element.change(function() {
-									var linked_value;
-									if($(this).hasClass('radio_buttons')) {
-										linked_value = $(this).find('input[type=radio]:checked').val();	
-									} else {
-										linked_value = $(this).val();
+								//var form_object = branch.root.elements.forms[form];
+								
+								var split = form.split("_");
+								var type = split[split.length-1]+"s";
+								if(form == "page_data") {
+									type = "page_data";
+								}
+								if(type == 'page_data') {
+									if(typeof page_data === 'undefined') {
+										page_data = {};	
 									}
-									if(dependency.value == "set") {
-										if(linked_value != "-1") {
+									var statement = "var linked_value = page_data."+form_element+";";
+									eval(statement);
+									if(dependency.value == 'unset') {
+										if(typeof linked_value === 'undefined' || linked_value == "-1") {
+											$content_item_element.show();
+											if(typeof content_item_object !== 'undefined') {
+												content_item_object.load();	
+											}
+										} else {
+											$content_item_element.hide();	
+										}
+									} else if(dependency.value == "set") {
+										if(typeof linked_value !== 'undefined' && linked_value != "-1") {
 											$content_item_element.show();
 											if(typeof content_item_object !== 'undefined') {
 												content_item_object.load();	
@@ -2094,7 +2215,7 @@ app.interpretation = {
 											$content_item_element.hide();	
 										}
 									} else {
-										if(linked_value == dependency.value) {
+										if(typeof linked_value !== 'undefined' && linked_value == dependency.value) {
 											$content_item_element.show();
 											if(typeof content_item_object !== 'undefined') {
 												content_item_object.load();	
@@ -2103,14 +2224,49 @@ app.interpretation = {
 											$content_item_element.hide();	
 										}
 									}
-								}).trigger('change');
+								} else {
+									var statement = "var form_object = branch.root.elements."+type+"['"+form+"']";
+									eval(statement);
+									
+									var $linked_form = form_object.$element;
+									var $linked_element = $linked_form.find('#'+form_element).first();
+									$linked_element.change(function() {
+										var linked_value;
+										if($(this).hasClass('radio_buttons')) {
+											linked_value = $(this).find('input[type=radio]:checked').val();	
+										} else {
+											linked_value = $(this).val();
+										}
+										if(dependency.value == "set") {
+											if(linked_value != "-1") {
+												$content_item_element.show();
+												if(typeof content_item_object !== 'undefined') {
+													content_item_object.load();	
+												}
+											} else {
+												$content_item_element.hide();	
+											}
+										} else {
+											if(linked_value == dependency.value) {
+												$content_item_element.show();
+												if(typeof content_item_object !== 'undefined') {
+													content_item_object.load();	
+												}	
+											} else {
+												$content_item_element.hide();	
+											}
+										}
+									}).trigger('change');
+								}
 							}
 						};
 					}(content_item.dependencies, $content_item_element);
 					branch.loaded_objects[page.id].loaded_callbacks.push(dependency_callback);
 				}
+				branch.loaded_objects[page.id].dependency_set();
 			}(content_item));
 		}
+		branch.loaded_objects[page.id].do_load();
 	},
 	display_page: function(id) {
 		var pages = this.root.definition.pages;

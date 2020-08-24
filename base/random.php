@@ -58,7 +58,7 @@ class random extends _class {
 		$results = array();
 		$number = $stop - $start;
 		$offset = $start;
-		if($number <= 359) {
+		/*if($number <= 359) {
 			$counter = 0;
 			while($counter < $amount) {
 				$result = $this->run($number);	
@@ -66,36 +66,42 @@ class random extends _class {
 				$results[] = $result;
 				$counter++;
 			}
-		} else {
-			$digits = strlen($number)-1;
-			$max_first_digit = substr($number, 0, 1);
-			while($amount > 0) {
-				$intermediate_results = $this->_random_length($amount, $digits);
-				//echo "intermediate_results:\n";
-				//var_dump($intermediate_results);
-				$add_count = 0;
-				foreach($intermediate_results as $value) {
-					$first_digit = $this->run($max_first_digit);
-					$value = $first_digit.$value;
-					if($value <= $number) {
-						$results[] = $value;	
-						$add_count++;
-					}
+		} else {*/
+		$digits = strlen($number);
+		$max_first_digit = substr($number, 0, 1);
+		while($amount > 0) {
+			$intermediate_results = $this->_string($digits);
+			//echo "intermediate_results:\n";
+			//var_dump($intermediate_results);
+			/*$add_count = 0;
+			foreach($intermediate_results as $value) {
+				$first_digit = $this->run($max_first_digit);
+				$value = $first_digit.$value;
+				if($value <= $number) {
+					$results[] = $value;	
+					$add_count++;
 				}
-				$amount = $amount - $add_count;
 			}
-			foreach($results as $index => $value) {
-				//var_dump($value);
-				$results[$index] = $value + $offset;	
+			$amount = $amount - $add_count;*/
+			if($intermediate_results > $number) {
+				
+			} else {
+				$results[] = $intermediate_results;		
+				$amount = $amount - 1;	
 			}
 		}
+		foreach($results as $index => $value) {
+			//var_dump($value);
+			$results[$index] = $value + $offset;	
+		}
+		//}
 		return $results;
 	}
 	
 	function _string($digits) {
 		$counter = 0;
 		$result = "";
-		$double_digits = floor($digits / 2);
+		/*$double_digits = floor($digits / 2);
 		while($counter < $double_digits) {
 			$value = $this->run(99);
 			if(strlen($value) < 2) {
@@ -111,6 +117,11 @@ class random extends _class {
 			$value = $this->run(9);
 			$result .= $value;
 			//var_dump($result);
+			$counter++;	
+		}*/
+		while($counter < $digits) {
+			$digit = $this->run(359);
+			$result .= $digit;
 			$counter++;	
 		}
 		return $result;
@@ -320,30 +331,11 @@ class random extends _class {
 			$this->run_simulation(0, $this->get_first_position(), $this->get_first_direction());	
 		}*/
 		$phase = $this->cylinders[count($this->cylinders)-1]->get_phase_offset();
-		$step_size = $this->step_size();
-		$counter = 0;
-		while($counter <= $phase) {
-			$counter += $step_size;	
+		if($phase == 0) {
+			return 0;	
 		}
-		$number = $counter / $step_size;
-		//var_dump($number);
-		/*if(strpos($number, ".") != false) {
-			$split = explode(".", $number);
-			$number = $split[0];	
-		}*/
-		$number = floor($number);
-		/*$dismiss_stop = 360/$step_size;
-		$dismiss_start = $dismiss_stop - $this->dismiss_count;*/
-		if($number > $this->range) {
-			$this->run_simulation(0, $this->get_position(), $this->get_direction());
-			return $this->get_number();
-		} else {
-			////echo "number: ".($number-1)."<br>";
-			$query = "INSERT INTO numrand.result_log (number, max, ratio) VALUES(".($number-1).", ".$this->range.", '".(($number-1)/$this->range)."')";
-			////echo $query."<br>";
-			$this->sql->execute($query);
-			return ($number-1);
-		}
+		$number = floor($phase/36);
+		return $number;
 	}
 	
 	public function get_position() {
@@ -363,7 +355,7 @@ class random extends _class {
 	}
 	
 	function reorder_list($v) {
-		$list = explode("\\n", $v['list_input']);
+		$list = explode("\n", $v['list_input']);
 		$clean_list = array();
 		foreach($list as $value) {
 			if(strlen(trim($value)) > 0) {
@@ -372,8 +364,21 @@ class random extends _class {
 		}
 		$list = $clean_list;
 		//var_dump($list);
-		$count = count($list);
-		$numbers = $this->_random(0, $count, $count);
+		
+		$output_list = array();
+		
+		$count = count($list)-1;
+		while($count >= 0) {
+			$numbers = $this->_random(0, $count, 1);
+
+			
+			$output_list[] = $list[$numbers[0]];
+			unset($list[$numbers[0]]);
+			$list = array_values($list);
+			$count--;
+		}
+		
+		/*$numbers = $this->_random(0, $count, $count);
 		//var_dump($numbers);
 		$output_list = array();
 		
@@ -396,7 +401,7 @@ class random extends _class {
 				}
 			}
 		}
-		ksort($output_list);
+		ksort($output_list);*/
 		//var_dump($output_list);
 		return implode("
 ", $output_list);	
