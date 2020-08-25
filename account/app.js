@@ -34,6 +34,34 @@ var app = {
 					submit_callback(result);	
 				}
 			});
+		},
+		change_password: function(data, submit_callback) {
+			var branch = this;
+			data.action = "_change_password";
+			data.id = branch.root.user_id;
+			$.post("https://www.noob.software/cloud_api/actions.php", data, function(result) {
+				if(result != -1) {
+					delete data.old_password;
+					data.action = "_user";
+					$.post(branch.root.actions, data, function(result) {
+						submit_callback(result);
+					});
+				} else {
+					submit_callback(result);	
+				}
+			});
+		}
+	},
+	create_user: {
+		init: function(data, submit_callback) {
+			var branch = this;
+			grecaptcha.ready(function() {
+				grecaptcha.execute('your-key-hwere', {action: '_user'}).then(function(token) {
+					data.token = token;
+					branch.user_submit.init(data, submit_callback);
+				});
+			});
+
 		}
 	}
 }

@@ -239,8 +239,44 @@ class base {
 		}
 	}
 	
+	function get_password_attempts() {		
+		$query = "SELECT * FROM app.login_attempts WHERE ip = '".$_SERVER['REMOTE_ADDR']."'";
+		$last_attempt = $this->sql->get_row($query, 1);
+		if($last_attempt == NULL) {
+			return 0;	
+		}
+		$last_attempt_created = new DateTime($last_attempt['created']);
+		$current_date = new DateTime();
+		
+		$interval = $current_date->diff($last_attempt_created);
+		$days = $interval->format('%R%a');
+		$login_count = 1;
+		if($days > 2) {
+		} else {
+			$login_count = $last_attempt['attempt_count'];
+		}
+		return $login_count;
+	}
+	
+	function login_attempt() {
+		$login_count = $this->get_password_attempts();
+		$login_count++;
+		$query = "DELETE FROM app.login_attempts WHERE ip = '".$_SERVER['REMOTE_ADDR']."'";
+		$this->sql->execute($query);
+		
+		$v = array(
+			'attempt_count' => $login_count,
+			'ip' => $_SERVER['REMOTE_ADDR']
+		);
+		$this->statement->generate($v, "app.login_attempts");
+		$this->sql->execute($this->statement->get());
+	}
+	
 	public function login($par) {
 		try {
+			if($this->get_password_attempts() > 5) {
+				return -1;	
+			}
 			$query = "SELECT * FROM app.users WHERE email = '".$par['username']."'";
 			$row = $this->sql->get_row($query, 1, NULL, true);
 			if(count($row) > 0 && $row['email'] == $par['username'] && password_verify($par['password'], $row['password'])) {
@@ -250,6 +286,7 @@ class base {
 				}
 				return $row['id'];	
 			} else {
+				$this->login_attempt();
 				return -1;	
 			}
 		} catch(Exception $e) {

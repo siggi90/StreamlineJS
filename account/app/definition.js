@@ -33,10 +33,6 @@ app.definition =
 							"type": "hidden",
 							"id": "server_id"
 						},
-						/*{
-							"type": "hidden",
-							"id": "user_group_id"
-						},*/
 						{
 							"type": "text",
 							"id": "email",
@@ -51,6 +47,7 @@ app.definition =
 					],
 					"save": true,
 					"custom_action": "user_submit.init",
+					//"custom_action": "create_user.init",
 					"redirect": "/cloud/",
 					"dependencies": [
 						{
@@ -86,50 +83,6 @@ app.definition =
 						}
 					]	
 				},
-				/*{
-					"type": "content",
-					"id": "existing_account",
-					"content": "Already have an account? Fill out form below to switch your Noob Account to this cloud."
-				},
-				{
-					"type": "form",
-					"id": "existing_user",
-					"title": "Switch to this Noob Cloud",
-					"content": [
-						{
-							"type": "hidden",
-							"id": "invite_key"
-						},
-						{
-							"type": "text",
-							"id": "email",
-							"validation": true,
-							"placeholder": "Email (username)"
-						},
-						{
-							"type": "password",
-							"id": "password",
-							"placeholder": "Password",
-							"no_confirmation": true
-						}
-					],
-					"save": true,
-					//"redirect": "/account/",
-					"dependencies": [
-						{
-							"link": "page_data.access",
-							"value": "1"
-						}
-					],
-					"get_load_mask": {
-						"id": "invite_key"
-					}	
-				},
-				/*{
-					"type": "content",
-					"id": "instructions",
-					"content": "You will use this a"	
-				}*/
 			]	
 		},
 		{
@@ -149,8 +102,6 @@ app.definition =
 					"position": "top",
 					"target": "main",
 					"content": [
-						//"downloads",
-						//"applications",
 						"account"
 					]
 				}
@@ -161,11 +112,6 @@ app.definition =
 			"title": "Downloads",
 			"user_access": "everyone",
 			"content": [
-				/*{
-					"type": "content",
-					"id": "instructions",
-					"content": "Here you can find Noob applications and libraries to download."
-				},*/
 				{
 					"type": "table",
 					"id": "downloads",
@@ -210,7 +156,8 @@ app.definition =
 							"placeholder": "Password"
 						}
 					],
-					"save": true,	
+					"save": true,
+					"custom_action": "user_submit.change_password",
 				},
 			]	
 		},

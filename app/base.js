@@ -737,6 +737,7 @@ var base = {
 			branch.interlope = 0;	
 		}
 	},
+	login_attempts: 0,
 	user_menu: {
 		get_username: function() {
 			$.post(this.root.actions, {
@@ -918,6 +919,8 @@ var base = {
 						for(var x in branch.login_callbacks) {
 							branch.login_callbacks[x]();	
 						}
+					} else {
+						branch.get_password_attempts();
 					}
 				});
 			});
@@ -928,6 +931,7 @@ var base = {
 				document.location.href = '/account/#sign_up';
 				branch.remove_login_overlay();
 			});
+			branch.get_password_attempts();
 			$.post(this.root.actions, {
 				action: 'get_user_id'	
 			}, function(data) {
@@ -952,6 +956,15 @@ var base = {
 				}
 				if(typeof callback !== 'undefined') {
 					callback();
+				}
+			});
+		},
+		get_password_attempts: function() {
+			$.post(this.root.actions, {
+				'action': 'get_password_attempts'
+			}, function(data) {
+				if(data > 5) {
+					$('.login .login_elements').html("<div>To many incorrect login attempts. You can try to login again in two days.</div>");	
 				}
 			});
 		},

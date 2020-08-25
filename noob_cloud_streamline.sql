@@ -309,4 +309,10 @@ INSERT INTO `colors` VALUES (1,NULL,'0,60%,50%'),(2,NULL,'30,60%,50%'),(3,NULL,'
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
-
+CREATE TABLE `login_attempts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `attempt_count` int(11) DEFAULT NULL,
+  `ip` varchar(256) DEFAULT NULL,
+  `created` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`)
+)

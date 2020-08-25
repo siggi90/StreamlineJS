@@ -6,6 +6,7 @@
 <title>Account | Noob Software</title>
 <script type='text/javascript' src='/jquery.js'></script>
 <script type='text/javascript' src='/jquery-ui.min.js'></script>
+<!--<script src="https://www.google.com/recaptcha/api.js?render=your-key-here"></script>-->
 <script type='text/javascript' src='app.js'></script>
 <style type='text/css'>
 	@import "/css/base.css";
