@@ -24,7 +24,7 @@
             </div>
     	</div>
     </div>
-    <div class='login' style=''>
+    <div class='login' style='display:none;'>
         <div class='login_elements'>
             <input type='text' id='username' placeholder="Email" />
             <input type='password' id='password' class='' Placeholder="Password" />

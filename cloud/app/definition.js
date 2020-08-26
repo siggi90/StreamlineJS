@@ -7,52 +7,6 @@ app.definition =
 			"admin": "index/apps"		
 		}
 	},
-	/*"search": {
-		"search_type": "filter",
-		"objects": [
-			{
-				"type": "table",
-				"id": "bug_reports",
-				"title": "Bug Reports",
-				"search": "filter",
-				"on_click": "bug_report",
-				"animation": "slide",
-				"target_frame" : "main",
-				"search_object": true,
-				"columns": {
-					"title": "Title",
-					"content": "Description",
-					"username": "User",
-					"created": "Created",
-					"app_name": "Application"	
-				}
-			},
-			{
-				"type": "table",
-				"id": "instructions_view",
-				"title": "Instructions",
-				"search_object": true,
-				"columns": {
-					"title": "Title",
-					"app_name": "Application"
-				},
-				"on_click": "instruction",
-				"target_frame": "main"
-			},
-			{
-				"type": "table",
-				"id": "examples",
-				"search_object": true,
-				"title": "Examples",
-				"columns": {
-					"title": "Title",
-					"app_name": "Application"
-				},
-				"on_click": "instruction",
-				"target_frame": "main"
-			},
-		]	
-	},*/
 	"pages": [
 		{
 			"id": "index",
@@ -103,34 +57,11 @@ app.definition =
 				}
 			]
 		},
-		/*{
-			"id": "introduction",
-			"title": "Introduction",
-			"content": [
-				{
-					"type": "content",
-					"id": "introduction",
-					"content": "Welcome to Noob Cloud. Here you can manage your cloud and access Noob Web Apps."	
-				}
-			]
-		},*/
 		{
 			"id": "overview",
 			"title": "Overview",
 			"user_access": "admin",
 			"content": [
-				/*{
-					"type": "content",
-					"id": "introduction",
-					"content": "If server status is not connected, please check your internet connection."	
-				},
-				{
-					"type": "status",
-					"id": "server",
-					"name": "Connection to Noob Server",
-					"status_message_true": "Connected",
-					"status_message_false": "Not Connected"
-				},*/
 				{
 					"type": "title",
 					"value": "Updates"
@@ -140,12 +71,6 @@ app.definition =
 					"id": "updates_description",
 					"content": "Updates will overwrite existing files. Click update to recieve and install updates."	
 				},
-				/*{
-					"type": "function_call",
-					"value": "Download and install Updates",
-					"id": "update",
-					"action": "recieve_updates"
-				},*/
 				{
 					"type": "custom_frame",
 					"id": "update",
@@ -450,6 +375,12 @@ app.definition =
 							"id": "team_name",
 							"placeholder": "Team/Organization Name"	
 						},
+						{
+							"type": "password",
+							"id": "password",
+							"no_confirmation": true,
+							"placeholder": "Your password"
+						}
 						/*{
 							"type": "textarea",
 							"id": "description",

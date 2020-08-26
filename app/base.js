@@ -743,7 +743,7 @@ var base = {
 			$.post(this.root.actions, {
 				action: 'get_username'	
 			}, function(data) {
-				$('#user_name.user_name').html(data);
+				$('a#user_name.user_name').html(data);
 			});
 		},
 		login_callbacks: Array(),
@@ -911,6 +911,7 @@ var base = {
 								'display': 'none'
 							});
 						});*/
+						branch.root.navigation.reload_hash();
 						branch.remove_login_overlay();
 						branch.get_username();
 						if(typeof callback !== 'undefined') {
@@ -1005,7 +1006,6 @@ var base = {
 			$('.logged_out_options').show();
 			$('.body_container').addClass('blur');
 			$('.overlay_black').css({
-				'opacity': '0',
 				'display': 'block'
 			}).animate({
 				'opacity': "1"

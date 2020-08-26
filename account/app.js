@@ -29,6 +29,7 @@ var app = {
 					delete data.server_id;
 					$.post(branch.root.actions, data, function(result) {
 						submit_callback(result);
+						window.location.href = '/account/';
 					});
 				} else {
 					submit_callback(result);	

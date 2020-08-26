@@ -25,6 +25,10 @@ input.dark {
 	background:rgba(0,0,0,0.75);	
 }
 
+.grecaptcha-badge {
+	visibility:hidden;
+}
+
 .small {
 	font-size:25px !important;	
 }

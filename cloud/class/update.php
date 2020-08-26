@@ -10,7 +10,14 @@ class update {
 	private $streamline = false;
 	
 	private $streamline_exclude = array(
-		'appstat'
+		'appstat',
+		'objectives',
+		'silver',
+		'numrand',
+		'numeval',
+		'noobtv',
+		'converge',
+		'discourse'
 	);
 	
 	private $server_root;
@@ -40,7 +47,6 @@ class update {
 					}
 				}
 				
-				$content = stripcslashes($content);
 				file_put_contents($_SERVER["DOCUMENT_ROOT"].$path, $content);	
 			}
 		}

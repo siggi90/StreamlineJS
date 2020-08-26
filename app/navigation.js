@@ -3,14 +3,25 @@ app.navigation = {
 	hash_value: null,
 	last_hash_value: null,
 	state_set: false,
+	reload_hash: function() {
+		if(this.default_route_set) {
+			window.location.hash = "";
+		}
+	},
+	default_route_set: false,
 	poll_hash: function() {
 		var branch = this;
 		var self = this;
 		var set_hash_value;
-		if(window.location.hash == "") {
-			
-		}
-		if(window.location.hash != this.recent_hash) {
+		if(window.location.hash != this.recent_hash) {	
+			branch.default_route_set = false;
+			if(window.location.hash != "" && typeof branch.root.definition !== 'undefined') {
+				for(var x in branch.root.definition.routes.default_route) {
+					if(window.location.hash == "#"+branch.root.definition.routes.default_route[x]) {
+						branch.default_route_set = true;	
+					}
+				}
+			}
 			this.recent_hash = window.location.hash;
 			this.hash_value = this.recent_hash.substr(1);
 			if(!this.state_state) {
@@ -18,15 +29,9 @@ app.navigation = {
 					'action': 'get_state'	
 				}, function(state_data) {
 					branch.state_set = true;
-					//alert(state_data);
-					var old_user_group = branch.root.user_group;
 					for(var x in state_data) {
-						//alert(x);
-						//alert(state_data[x]);
 						branch.root[x] = state_data[x];
 					}
-					//continue_render(split_index);
-						//window.location.hash = "#";
 					if(window.location.hash == "") {
 						if(typeof branch.root.definition.routes !== 'undefined') {
 							if(typeof branch.root.definition.routes.default_route !== 'undefined') {
@@ -44,6 +49,9 @@ app.navigation = {
 							set_hash_value = "#index";	
 						}
 						if(typeof set_hash_value !== 'undefined') {
+							branch.default_route_set = true;
+							branch.recent_hash = set_hash_value;
+							branch.hash_value = set_hash_value.substr(1);
 							history.replaceState(undefined, undefined, set_hash_value)	
 						}
 					}
@@ -73,8 +81,6 @@ app.navigation = {
 	access_granted: true,
 	$parse_render_frame: null,
 	parse_render: function(split, frame, $frame, id, get_data, frame_depth_offset) {
-		//function get_state() {
-		//}
 		this.access_granted = true;
 		var branch = this;
 		branch.$parse_render_frame = $frame;

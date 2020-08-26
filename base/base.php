@@ -272,6 +272,11 @@ class base {
 		$this->sql->execute($this->statement->get());
 	}
 	
+	function reset_login_attempts() {
+		$query = "DELETE FROM app.login_attempts WHERE ip = '".$_SERVER['REMOTE_ADDR']."'";
+		$this->sql->execute($query);
+	}
+	
 	public function login($par) {
 		try {
 			if($this->get_password_attempts() > 5) {
@@ -284,6 +289,7 @@ class base {
 				foreach($this->login_callbacks as $login_callback) {
 					$login_callback($par['username'], $par['password']);	
 				}
+				$this->reset_login_attempts();
 				return $row['id'];	
 			} else {
 				$this->login_attempt();

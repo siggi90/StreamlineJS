@@ -11,6 +11,7 @@ var app = {
 	},
 	finish_init: function() {	
 		var branch = this;
+		branch.easings.init();
 		branch.user_menu.init();
 		branch.interpretation.init();
 		branch.overview.init_clock();
@@ -21,6 +22,7 @@ var app = {
 			data.action = "_update_server";
 			$.post("https://www.noob.software/cloud_api/actions.php", data, function(result) {
 				data.action = "_settings";
+				delete data.password;
 				$.post(branch.root.actions, data, function(result) {
 					submit_callback(result);
 				});
