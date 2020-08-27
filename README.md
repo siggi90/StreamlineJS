@@ -14,3 +14,5 @@ Streamline is a very efficient way to develop web apps/web pages. The support pa
 Updating can be performed within the /cloud/ app in the overview tab. By clicking Download and install updates. Note the apache user must have write permissions to perform updates this way. As files and folders may have to be created. Remember to set the streamline option to true in base/config.php if you only want to use Streamline for web development, else you get server-side software for Noob Software Apps installed along side Streamline.
 
 Streamline web pages are fully ajaxed, which means you never have to reload the web page. Link hashes are used to navigate through the web page without reloading the page so navigated pages are placed in the history of the browser and can be bookmarked and the back button navigates to the last page. Animations can be applied when switching between pages. 
+
+Setting up reCaptcha: https://noob.software/support/#index/instruction#36&
