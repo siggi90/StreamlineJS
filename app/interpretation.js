@@ -1063,6 +1063,7 @@ app.interpretation = {
 										search_term: search_string,
 										offset: self.offset	
 									};
+									console.log(content_item.post_data);
 									if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
 										for(var x in content_item.post_data) {
 											var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
@@ -2055,13 +2056,21 @@ app.interpretation = {
 						eval(statement);
 						var caption = "";
 						var class_value = "";
+						var popover = true;
+						var time = true;
 						if(typeof content_item.caption !== 'undefined') {
 							caption = "<div class='caption'>"+content_item.caption+"</div>";
 							class_value = "caption_container"
 						}
+						if(typeof content_item.popover !== 'undefined') {
+							popover = content_item.popover;	
+						}
+						if(typeof content_item.time !== 'undefined') {
+							time = content_item.time;	
+						}
 						$container.append("<div class='date "+class_value+"' id='"+content_item.id+"'>"+caption+"<div class='date_value_wrap'>"+value+"</div></div>");
 						$content_item_element = $container.find('.date#'+content_item.id).first();
-						branch.view.date.date_cell($content_item_element.find('.date_value_wrap').first(), true, true);
+						branch.view.date.date_cell($content_item_element.find('.date_value_wrap').first(), time, popover);
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'information':
@@ -2101,9 +2110,10 @@ app.interpretation = {
 							var statement = "value = page_data."+id+";";
 							eval(statement);
 						}
-						$container.append("<div class='content' id='"+content_item.id+"'>"+value+"</div>");
-						$content_item_element = $container.find('.content#'+content_item.id).first();
-						
+						if(typeof value !== 'undefined') { 
+							$container.append("<div class='content' id='"+content_item.id+"'>"+value+"</div>");
+							$content_item_element = $container.find('.content#'+content_item.id).first();
+						}
 						if(value == 'fetch') {
 							$.post(branch.root.actions, {
 								'action': 'get_'+content_item.id	
