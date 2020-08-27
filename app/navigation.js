@@ -13,9 +13,9 @@ app.navigation = {
 		var branch = this;
 		var self = this;
 		var set_hash_value;
-		if(window.location.hash != this.recent_hash) {	
+		if(window.location.hash != this.recent_hash) {
 			branch.default_route_set = false;
-			if(window.location.hash != "" && typeof branch.root.definition !== 'undefined') {
+			if(window.location.hash != "" && typeof branch.root.definition !== 'undefined' && typeof branch.root.definition.routes !== 'undefined') {
 				for(var x in branch.root.definition.routes.default_route) {
 					if(window.location.hash == "#"+branch.root.definition.routes.default_route[x]) {
 						branch.default_route_set = true;	
@@ -201,10 +201,6 @@ app.navigation = {
 				} else {
 					branch.root.user_menu.display_login_overlay();	
 				}
-				if(!this.search_initialized) {
-					branch.root.search.init();	
-					branch.search_initialized = true;
-				}
 			}
 			//}
 		};
@@ -227,6 +223,11 @@ app.navigation = {
 			continue_render(split_index);	
 		}*/
 		continue_render(split_index);	
+		
+		if(!this.search_initialized) {
+			branch.root.search.init();	
+			branch.search_initialized = true;
+		}
 	},
 	search_initialized: false,
 	open_tab: function() {

@@ -29,6 +29,8 @@ app.interpretation = {
 			this.$container = this.parent.$container;
 			this.animation = this.parent.animation;
 			this.current_page = this.parent.current_page;
+			
+			//this.animation = this.current_page.animation;
 			var self = this;
 			function loaded_object() {
 				self.root.functions.copy_object(this, self);
@@ -76,6 +78,10 @@ app.interpretation = {
 							}
 						});
 					};
+					if(typeof branch.animation === 'undefined') {
+						branch.animation = false;	
+					}
+					
 					if(branch.animation == false) {
 						clean_pages();
 						branch.$container.show();	
@@ -204,19 +210,22 @@ app.interpretation = {
 			class_value = page.class;	
 		}
 		if(animation != false) {
-			//alert(animation);
 			var $last_page = $container.find('.page').first();
 			var width = $last_page.width();
-			$last_page.css({
-				'position': 'absolute',
-				'width': width
-			});
-			$last_page.animate({
-				'margin-left': '-110%',
-				//'margin-right': '110%'
-			}, 750, 'easeInOutQuint', function() {
-				
-			});
+			switch(animation) {
+				case 'slide':
+					$last_page.css({
+						'position': 'absolute',
+						'width': width
+					});
+					$last_page.animate({
+						'margin-left': '-110%',
+						//'margin-right': '110%'
+					}, 750, 'easeInOutQuint', function() {
+						
+					});
+					break;
+			}
 		}
 		if($container.find('#'+page.id).length > 0) {
 			$container.find('#'+page.id).remove();	
@@ -328,8 +337,10 @@ app.interpretation = {
 							var statement = "value = page_data."+id+";";
 							eval(statement);
 						}
-						$container.append("<div class='image' id='"+content_item.id+"'><img src='"+content_item.image_location+'/'+value+"' class='max_original_size' /></div>");
-						$content_item_element = $container.find('.image#'+content_item.id).first();
+						if(typeof value !== 'undefined') {
+							$container.append("<div class='image' id='"+content_item.id+"'><img src='"+content_item.image_location+'/'+value+"' class='max_original_size' /></div>");
+							$content_item_element = $container.find('.image#'+content_item.id).first();
+						}
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'options':
@@ -854,10 +865,23 @@ app.interpretation = {
 									if(typeof content_item.date_columns !== 'undefined') {
 										for(var c in content_item.date_columns) {
 											(function(c) {
-												$list_values_container.find('.'+content_item.date_columns[c]).each(function() {
+												var date_column_class = content_item.date_columns[c];
+												var popover = true;
+												var time = true;
+												if(typeof date_column_class === 'object') {
+													var date_column_object = date_column_class;
+													date_column_class = date_column_class.class;	
+													if(typeof date_column_object.popover !== 'undefined') {
+														popover = date_column_object.popover;	
+													}
+													if(typeof date_column_object.time !== 'undefined') {
+														time = date_column_object.time;	
+													}
+												}
+												$list_values_container.find('.'+date_column_class).each(function() {
 													if(!$(this).parent().hasClass('table_header')) {
 														var $this = $(this);
-														branch.view.date.date_cell($this);
+														branch.view.date.date_cell($this, time, popover);
 													}
 												});
 											}(c));
@@ -1269,10 +1293,23 @@ app.interpretation = {
 										if(typeof content_item.date_columns !== 'undefined') {
 											for(var c in content_item.date_columns) {
 												(function(c) {
-													$list_values_container.find('.'+content_item.date_columns[c]).each(function() {
+													var date_column_class = content_item.date_columns[c];
+													var popover = true;
+													var time = true;
+													if(typeof date_column_class === 'object') {
+														var date_column_object = date_column_class;
+														date_column_class = date_column_class.class;	
+														if(typeof date_column_object.popover !== 'undefined') {
+															popover = date_column_object.popover;	
+														}
+														if(typeof date_column_object.time !== 'undefined') {
+															time = date_column_object.time;	
+														}
+													}
+													$list_values_container.find('.'+date_column_class).each(function() {
 														if(!$(this).parent().hasClass('table_header')) {
 															var $this = $(this);
-															branch.view.date.date_cell($this);
+															branch.view.date.date_cell($this, time, popover);
 														}
 													});
 												}(c));
@@ -2024,7 +2061,7 @@ app.interpretation = {
 						}
 						$container.append("<div class='date "+class_value+"' id='"+content_item.id+"'>"+caption+"<div class='date_value_wrap'>"+value+"</div></div>");
 						$content_item_element = $container.find('.date#'+content_item.id).first();
-						branch.view.date.date_cell($content_item_element.find('.date_value_wrap').first());
+						branch.view.date.date_cell($content_item_element.find('.date_value_wrap').first(), true, true);
 						branch.loaded_objects[page.id].loaded();
 						break;
 					case 'information':
@@ -2426,13 +2463,15 @@ app.interpretation = {
 			}
 		},
 		date: {
-			date_cell: function($container) {
+			date_cell: function($container, time, popover) {
 				var branch = this;
 				var date_content = $container.text();
 				$container.data("original_date", date_content);
-				var date_formatted = branch.date_format(date_content);
+				var date_formatted = branch.date_format(date_content, time);
 				$container.html(date_formatted);
-				branch.date_popover($container);
+				if(popover) {
+					branch.date_popover($container);
+				}
 			},
 			date_popover: function($container) {
 				//alert($container.text());
@@ -2481,7 +2520,7 @@ app.interpretation = {
 					
 				});*/
 			},
-			date_format: function(datetime) {
+			date_format: function(datetime, display_time) {
 				var datetime = datetime.split(" ");
 				var date = datetime[0];
 				var time = "";
@@ -2537,7 +2576,7 @@ app.interpretation = {
 				
 				var result = "";
 				result += day+" "+month_string+" "+year;
-				if(time != "") {
+				if(time != "" && display_time) {
 					time = time.substr(0, time.length-3);	
 					result += " "+time;
 				}

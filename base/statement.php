@@ -39,6 +39,9 @@ class statement {
 				break;*/
 			default:
 				if((gettype($v) == 'string') && $v != "NOW()" && $v != "NULL") { // && !is_numeric($v) // || (strpos($v, ":") != false) )"
+					if(count($this->value_callback) > 0) {
+						$v = stripcslashes($v);	
+					}
 					foreach($this->value_callback as $value_callback) {
 						$v = $value_callback($v);	
 					}
@@ -48,7 +51,7 @@ class statement {
 				break;
 		}
 	}
-	
+		
 	private $database_prefix = NULL;
 	
 	function __construct($values=NULL, $type=NULL, $table=NULL) {
