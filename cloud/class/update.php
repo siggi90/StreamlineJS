@@ -3,7 +3,7 @@
 class update {
 	public $function_access = array(
 		'admin' => array(
-			'recieve_updates'
+			'recieve_updates_'
 		)
 	);
 	
