@@ -715,7 +715,7 @@ app.interpretation = {
 						var assign_statement = "assign_parent."+content_item.id+" = frame_object;";
 						eval(assign_statement);
 						branch.loaded_objects[page.id].loaded();
-						break;	
+						break;
 					case 'list':
 						$container.append("<div id='"+content_item.id+"_list' class='list'></div>");
 						var $list = $container.find('#'+content_item.id+"_list").first();
@@ -723,6 +723,12 @@ app.interpretation = {
 						var $search;
 						if(typeof content_item.title !== 'undefined') {
 							$list.append("<div class='title'>"+content_item.title+"</div>");	
+						}
+						var template_selector;
+						var li_template;
+						if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {								
+							template_selector = '#'+content_item.template+'_li_template';
+							li_template = $('#templates > '+template_selector).first()[0].outerHTML;	
 						}
 						var target_frame = content_item.target;
 						var target_frame_object = branch.root.eval_object_path(branch.root.find("elements.frames", target_frame), "this");
@@ -739,8 +745,10 @@ app.interpretation = {
 						var list_operation = {
 							offset: 0,
 							$list: $list,
+							components: Array(),
 							load: function(send_data, search_term) {
 								var self = this;
+								self.components = Array();
 								/*if(typeof no_refresh === 'undefined') {
 								}*/
 								/*if(typeof no_refresh !== 'undefined') {
@@ -751,7 +759,7 @@ app.interpretation = {
 								if(typeof search_term === 'undefined') {
 									search_term = '';	
 								}
-								$list_values_container = branch.view.dummy_div.new();	//$('.dummy_div').first();
+								$list_values_container = self.$list;//branch.view.dummy_div.new();	//$('.dummy_div').first();
 								$list_values_container.html("");	
 								var post_data = {
 									action: content_item.id+"_list",
@@ -784,67 +792,148 @@ app.interpretation = {
 											username_target_depth = branch.root.navigation.frames.find_frame_depth(content_item.content.username.target);	
 										}
 									}
+									
 									for(var x in data) {
 										var list_item_href = "";
 										if(typeof content_item.click !== 'undefined') {
 											list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id);
 										}
-										var row_item = "<div class='list_item' id='"+data[x].id+"'>";
-										if(typeof data[x].title !== 'undefined') {
-											if(list_item_href != "") {
-												row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
-											} else {
-												row_item += "<div class='title list_element'>"+data[x].title+"</div>";
-											}
-											delete data[x].title;
-										}
-										if(typeof data[x].image !== 'undefined') {
-											//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
-											if(list_item_href != "") {
-												row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
-											} else {
-												row_item += "<img src='"+image_root+"/"+data[x].image+"' class='max_original_size' />";
-											}
-											delete data[x].image;
-										}
-										var line_clamp = "";
-										if(typeof content_item.clamp_content !== 'undefined') {
-											line_clamp = "line_clamp";
-										}
-										if(typeof data[x].content !== 'undefined') {
-											row_item += "<div class='content list_element "+line_clamp+"'>"+data[x].content+"</div>";
-											delete data[x].content;
-										}
-										delete data[x].id;
-										/*if(typeof data[x].username !== 'undefined') {
-											var user_href = branch.root.navigation.generate_href("user", username_target_depth, data[x].user_id);
-											row_item += "<div class='username list_element'><a href='"+user_href+"'>"+data[x].username+"</a></div>";
-											delete data[x].username;
-											delete data[x].user_id;
-										}*/
-										if(typeof data[x].username !== 'undefined') {
+										
+										
+										if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {
+											var row_item = li_template;
 											
-											delete data[x].user_id;
-										}
-										//row_item += "<div class='list_item_information'>";
-										var li_information_count = 0;
-										for(var y in data[x]) {
-											if(li_information_count > 0) {
-												//row_item += "<div class='list_element column_split'>|</div>";	
-											}
-											var column_title = y;
-											if(typeof content_item.columns !== 'undefined') {
-												if(typeof content_item.columns[y] !== 'undefined') {
-													column_title = content_item.columns[y];	
+											$list_values_container.append(row_item);
+											
+											var li_id = content_item.id+'_'+data[x].id;
+											$list_values_container.find(template_selector).first().attr('id', li_id);
+											var $li = $list_values_container.find('#'+li_id).first();
+											for(var v in data[x]) {
+												if(v.indexOf('_column_value') == -1) {
+													var li_id_suffix = v;
+													if(typeof content_item.class_mask !== 'undefined') {
+														if(typeof content_item.class_mask[li_id_suffix] !== 'undefined') {
+															li_id_suffix = content_item.class_mask[li_id_suffix];
+														}
+													}
+													var $column = $li.find('.'+li_id_suffix).first();
+													$column.html(data[x][v]);
+													if(typeof data[x][v+'_column_value'] !== 'undefined') {
+														$column.attr('value', data[x][v+'_column_value']);
+													}
+													
+													if(typeof content_item.columns_click !== 'undefined') {
+														if(typeof content_item.columns_click[v] !== 'undefined') {
+															if(content_item.columns_click[v] == 'click') {
+																$column.html("<a href='"+list_item_href+"'>"+$column.html()+"</a>");
+															} else {
+																var click_item = content_item.columns_click[v];
+																var post_data = {
+																	
+																};
+																var click_value = content_item.click;
+																if(typeof click_item.click !== 'undefined') {
+																	click_value = click_item.click;	
+																}
+																if(typeof click_item.post_data !== 'undefined') {
+																	for(var p in click_item.post_data) {
+																		if(click_item.post_data[p] == "value") {
+																			post_data[p] = data[x][v];
+																			if(typeof $column.attr('value') !== 'undefined') {
+																				post_data[p] = $column.attr('value');	
+																			}
+																		} else if(typeof page_data !== 'undefined') {
+																			post_data[p] == page_data[click_Item.post_data[p]];	
+																		}
+																	}
+																}
+																var id = null;
+																if(typeof post_data.id !== 'undefined') {
+																	id = post_data.id;
+																	delete post_data.id;
+																}
+																var column_href = "";
+																if(click_item.target == 'self') {
+																	column_href = branch.root.navigation.generate_href(click_value, null, id, post_data, frame_id);	
+																} else {
+																	var target_frame_object_column = branch.root.eval_object_path(branch.root.find("elements.frames", click_item.target), "this");
+																	var target_frame_depth_column = branch.root.depth(target_frame_object_column, branch.root.elements.frames, 0) - 1;
+																	column_href = branch.root.navigation.gernerate_href(click_value, target_frame_depth_column, id, post_data, frame_id);
+																}
+																$column.html("<a href='"+column_href+"'>"+$column.html()+"</a>");
+															}
+														}
+													}
 												}
 											}
-											row_item += "<div class='list_element_wrap'><div class='caption'>"+column_title+"</div><div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
-											li_information_count++;
-											
+										} else {
+											var row_item = "<div class='list_item' id='"+data[x].id+"'>";
+											if(typeof data[x].title !== 'undefined') {
+												if(list_item_href != "") {
+													row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
+												} else {
+													row_item += "<div class='title list_element'>"+data[x].title+"</div>";
+												}
+												delete data[x].title;
+											}
+											if(typeof data[x].image !== 'undefined') {
+												//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
+												if(list_item_href != "") {
+													row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
+												} else {
+													row_item += "<img src='"+image_root+"/"+data[x].image+"' class='max_original_size' />";
+												}
+												delete data[x].image;
+											}
+											var line_clamp = "";
+											if(typeof content_item.clamp_content !== 'undefined') {
+												line_clamp = "line_clamp";
+											}
+											if(typeof data[x].content !== 'undefined') {
+												row_item += "<div class='content list_element "+line_clamp+"'>"+data[x].content+"</div>";
+												delete data[x].content;
+											}
+											delete data[x].id;
+											if(typeof data[x].username !== 'undefined') {
+												var user_href = branch.root.navigation.generate_href("user", username_target_depth, data[x].user_id);
+												row_item += "<div class='username list_element'><a href='"+user_href+"'>"+data[x].username+"</a></div>";
+												delete data[x].username;
+												delete data[x].user_id;
+											}
+											if(typeof data[x].username !== 'undefined') {
+												
+												delete data[x].user_id;
+											}
+											//row_item += "<div class='list_item_information'>";
+											var li_information_count = 0;
+											for(var y in data[x]) {
+												if(li_information_count > 0) {
+													//row_item += "<div class='list_element column_split'>|</div>";	
+												}
+												var column_title = y;
+												if(typeof content_item.columns !== 'undefined') {
+													if(typeof content_item.columns[y] !== 'undefined') {
+														column_title = content_item.columns[y];	
+													}
+												}
+												row_item += "<div class='list_element_wrap'><div class='caption'>"+column_title+"</div><div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
+												li_information_count++;
+												
+											}
+											row_item += "</div>";//</div>";
+											$list_values_container.append(row_item);
+											var $li = $list_values_container.find('#'+data[x].id).first();
 										}
-										row_item += "</div>";//</div>";
-										$list_values_container.append(row_item);
+										
+										if(typeof content_item.components !== 'undefined') {
+											self.components[x] = ({});
+											for(var v in content_item.components) {
+												self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self);
+												self.components[x][v].init();
+											}
+										}
 									}
+									
 									if(typeof content_item.show_all_items !== 'undefined') {
 										if(content_item.show_all_items == true) {
 											$.post(branch.root.actions, {
@@ -888,7 +977,7 @@ app.interpretation = {
 										}
 									}
 									
-									branch.view.display_changes(self.$list, $list_values_container);
+									//branch.view.display_changes(self.$list, $list_values_container);
 									/*$list_values_container.find('.list_item_information').each(function() {				
 										branch.root.interpretation.view.single_row_columns($(this));
 									});*/
@@ -1049,15 +1138,17 @@ app.interpretation = {
 								offset: 0,
 								perist_send_data: null,
 								$list: $list,
+								components: Array(),
 								load: function(send_data, search_string) {
 									var self = this;
+									self.components = Array();
 									//if(typeof no_refresh === 'undefined' && no_refresh != false) {
 										//$list.html("");	
 									//}
 									if(typeof search_string === 'undefined') {
 										search_string = '';	
 									}
-									var $list_values_container = branch.view.dummy_div.new();//= $('.dummy_div').first();
+									var $list_values_container = self.$list;//branch.view.dummy_div.new();//= $('.dummy_div').first();
 									var post_data = {
 										action: content_item.id+"_table",
 										search_term: search_string,
@@ -1289,6 +1380,15 @@ app.interpretation = {
 												}(data[x]));
 												//$row.append("<div class='table_column drag' id='drag'><i class='icofont-navigation-menu'></i></div>");
 											}
+											var $li = $row;
+											
+											if(typeof content_item.components !== 'undefined') {
+												self.components[x] = ({});
+												for(var v in content_item.components) {
+													self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self);
+													self.components[x][v].init();
+												}
+											}
 										}
 											
 										if(typeof content_item.date_columns !== 'undefined') {
@@ -1337,11 +1437,13 @@ app.interpretation = {
 										
 										
 										
-										branch.view.display_changes(self.$list, $list_values_container, function() {
+										/*branch.view.display_changes(self.$list, $list_values_container, function() {
 											if(typeof content_item.drag_reorder !== 'undefined') {
 												init_order();	
 											}
-										});
+										});*/
+										
+										init_order();	
 										
 										branch.loaded_objects[page.id].loaded();
 									}, "json"); //
@@ -1611,6 +1713,17 @@ app.interpretation = {
 											var $hidden = $form.find('input#'+form_element.id).first();
 											trackChange($hidden[0]);
 											$input = $hidden;
+											break;
+										case 'link':
+											$form.append("<div class='form_element'><input type='text' id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"' /></div>");
+											$input = $form.find('#'+form_element.id).first();
+											$input.on('keypress', function(e) {
+												if($(this).val().indexOf('http://') == 0 || $(this).val().indexOf('https://') == 0) {
+													$(this).removeClass('invalid');		
+												} else {
+													$(this).addClass('invalid');
+												}
+											});	
 											break;
 										case 'text':
 											$form.append("<div class='form_element'><input type='text' id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"' /></div>");
@@ -2445,7 +2558,7 @@ app.interpretation = {
 				}
 				$container.html("");
 				$dummy_div.children().each(function() {
-					$(this).clone(true).appendTo($container);
+					$(this).clone(true, true).appendTo($container);
 				});
 				//$container.html($dummy_div.html());
 				setTimeout(function() {

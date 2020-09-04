@@ -44,7 +44,7 @@ class streamline {
 	}
 	
 	function calendar_popover($year, $month, $day) {
-		return $this->calendar->month(true, $year, $month, $day);	
+		return $this->calendar->month($year, $month, $day);	
 	}
 		
 	function generate_backend() {

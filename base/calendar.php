@@ -336,6 +336,9 @@ class calendar {
 	function month($_year='', $_month='', $day='', $day_class='', $small_view=false) {		
 		$o = "";
 		$popover = false;
+		if($day != '') {
+			$popover = true;
+		}
 		/*$o = "
 		<div style='height:50%;' class='no_touch' id='calendar_view_wrapper'>
 		<div class='sv_cal_popover_info'>

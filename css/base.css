@@ -11,6 +11,16 @@ body {
 	font-size:25px;
 }
 
+div#templates {
+	display:none;	
+}
+
+.menu_button {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;	
+}
+
 input, textarea, button {
 	
 	font-family: 'HelveticaNeue-UltraLight', 'Helvetica Neue UltraLight', 'Helvetica Neue', Arial, Helvetica, sans-serif;	
@@ -1025,6 +1035,19 @@ body.night {
 	overflow:auto;
 }
 
+.overlay_black_ {
+	color:#ddd;	
+	background:rgba(0,0,0,0.6);
+	position:fixed;
+	top:0px;
+	left:0px;
+	right:0px;
+	bottom:0px;
+	z-index:666;
+	overflow:auto;
+}
+
+
 .user_options {
 	height: 200px;
 	width: 400px;
@@ -1152,6 +1175,7 @@ body.night {
 .menu_options {
 	border-radius:5px;
 	overflow:hidden;	
+	table-layout:fixed;	
 }
 
 .console_input {

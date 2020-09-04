@@ -139,9 +139,9 @@ class statement {
 				} else if(strpos($row['COLUMN_NAME'], "_id") !== false && isset($values[$row['COLUMN_NAME']]) && $values[$row['COLUMN_NAME']] == "-1") {
 					if($allow_null == false) {
 						unset($values[$row['COLUMN_NAME']]);
-					} else {
+					}/* else {
 						$values[$row['COLUMN_NAME']] = "NULL";
-					}
+					}*/
 				}
 				
 				/* else if($row['COLUMN_NAME'] == 'id') {

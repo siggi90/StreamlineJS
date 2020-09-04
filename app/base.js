@@ -223,7 +223,6 @@ var base = {
 	find: function(base, object, sub_call) {
 		var self = this;
 		var statement = 'var obj = this.'+base+';';
-		//alert(statement);
 		eval(statement);
 		if(object == '') {
 			return false;
@@ -259,6 +258,9 @@ var base = {
 		if(object == base) {
 			return depth;	
 		}
+		/*if(typeof object === 'undefined') {
+			return null;	
+		}*/
 		return this.depth(object.parent, base, depth+1);
 		
 	},
@@ -954,9 +956,10 @@ var base = {
 						$('.console').addClass('console_back');
 					}
 					branch.get_username();
-				}
-				if(typeof callback !== 'undefined') {
-					callback();
+					
+					if(typeof callback !== 'undefined') {
+						callback();
+					}
 				}
 			});
 		},
@@ -1019,7 +1022,7 @@ var base = {
 			}).animate({
 				'opacity': "1"
 			}, 1500, 'easeInQuart', function() {
-					
+				branch.main_callback_called = false;	
 			});
 		}
 	}
