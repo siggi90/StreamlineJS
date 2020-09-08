@@ -4,7 +4,7 @@ Streamline is a web development framework created by Noob Software. This reposit
 
 An example of a Streamline webpage is https://github.com/siggi90/sl_cv which is a publications/cv website intended for displaying publications. This template is a single user page with a admin/content management interface.
 
-Noob Cloud is the server-side software for Noob Applications. Note you have to purchase Noob Cloud to use it for Noob Apps. Streamline is also intended for sale but is available for download for testing and experimenting.
+Noob Cloud is the server-side software for Noob Applications. You must sign up for a Noob account to use Noob Cloud to power Noob Applications. Follow these instructions to set up Noob Cloud or Streamline: https://noob.software/support/#index/instruction#32&
 
 For more information visit: https://noob.software/#streamline
 and https://noob.software/#cloud
