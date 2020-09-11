@@ -75,7 +75,9 @@ app.navigation = {
 			var sub_split = split[x].split("=");
 			get_data[sub_split[0]] = sub_split[1];
 		}
-		get_data.id = id;
+		if(id.trim().length > 0) {
+			get_data.id = id;
+		}
 		return get_data;
 	},
 	access_granted: true,
@@ -224,10 +226,10 @@ app.navigation = {
 		}*/
 		continue_render(split_index);	
 		
-		if(!this.search_initialized) {
+		/*if(!this.search_initialized) {
 			branch.root.search.init();	
 			branch.search_initialized = true;
-		}
+		}*/
 	},
 	search_initialized: false,
 	open_tab: function() {

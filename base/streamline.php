@@ -7,7 +7,7 @@ class streamline {
 	private $calendar;
 	
 	function __construct($sql, $statement, $user_id) {
-		$this->sql;
+		$this->sql = $sql;
 		$this->statement = $statement;
 		$this->user_id = $user_id;
 		$this->calendar = new calendar();
@@ -46,8 +46,31 @@ class streamline {
 	function calendar_popover($year, $month, $day) {
 		return $this->calendar->month($year, $month, $day);	
 	}
-		
-	function generate_backend() {
+	
+	function get_user($id) {
+		$query = "SELECT email FROM app.users WHERE id = ".$id;
+		return $this->sql->get_row($query, 1, NULL, true);	
+	}
+	
+	function is_user($id) {
+		if($id == $this->user_id) {
+			return true;	
+		}
+		return false;
+	}
+	
+	function email_validation($value) {
+		/*if(!ctype_alnum($value)) {
+			return false;
+		}*/
+		if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return false;
+		}
+		$query = "SELECT COUNT(*) as count FROM app.users WHERE email = '".$value."'";
+		$count = $this->sql->get_row($query, 1, NULL, true)['count'];
+		return !($count > 0);	
+	}	
+	/*function generate_backend() {
 		$handle = fopen("/Applications/XAMPP/xamppfiles/htdocs/streamline/app/definitions.js", "r");
 		$line_count = 0;
 		$object_value = "";
@@ -108,7 +131,7 @@ class streamline {
 		
 		
 		return 1;
-	}
+	}*/
 	
 }
 
