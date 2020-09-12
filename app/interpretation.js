@@ -790,7 +790,7 @@ app.interpretation = {
 											username_target_depth = branch.root.navigation.frames.find_frame_depth(content_item.content.username.target);	
 										}
 									}
-									
+									$list_values_container.html("");	
 									for(var x in data) {
 										var list_item_href = "";
 										if(typeof content_item.click !== 'undefined') {
@@ -1181,7 +1181,7 @@ app.interpretation = {
 									}
 									$.post(branch.root.actions, post_data, function(data) {
 										self.list_data = data;
-										//$list_values_container.html("");	
+										$list_values_container.html("");	
 										self.offset += data.length;
 										if(data.length > 0) {
 											var x = 0;
