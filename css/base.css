@@ -117,6 +117,23 @@ button.save.saved {
     text-shadow:0px 0px 10px #fff;   
 }
 
+.table_column {
+    -webkit-transition:text-shadow 0.5s ease-in-out;
+    -moz-transition:text-shadow 0.5s ease-in-out;
+    -o-transition:text-shadow 0.5s ease-in-out;
+    -ms-transition:text-shadow 0.5s ease-in-out;
+    transition:text-shadow 0.5s ease-in-out;    
+    
+    text-shadow:0px 0px 0px #fff; 
+}
+
+.table_column.saved {
+    text-shadow:0px 0px 10px #fff;   
+}
+
+
+
+
 .tooltip {
 	position: relative;
 	display: inline-block;

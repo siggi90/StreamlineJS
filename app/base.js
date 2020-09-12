@@ -956,10 +956,9 @@ var base = {
 						$('.console').addClass('console_back');
 					}
 					branch.get_username();
-					
-					if(typeof callback !== 'undefined') {
-						callback();
-					}
+				}			
+				if(typeof callback !== 'undefined') {
+					callback();
 				}
 			});
 		},

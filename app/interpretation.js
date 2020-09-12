@@ -753,7 +753,7 @@ app.interpretation = {
 									search_term = '';	
 								}
 								$list_values_container = self.$list;//branch.view.dummy_div.new();	//$('.dummy_div').first();
-								$list_values_container.html("");	
+								//$list_values_container.html("");	
 								var post_data = {
 									action: content_item.id+"_list",
 									search_term: search_term,
@@ -913,7 +913,7 @@ app.interpretation = {
 												var column_title = y;
 												if(typeof content_item.columns !== 'undefined') {
 													if(typeof content_item.columns[y] !== 'undefined') {
-														if(typeof content_item.columns !== 'object') {
+														if(typeof content_item.columns[y] !== 'object') {
 															column_title = content_item.columns[y];	
 														} else {
 															if(typeof branch.root.language !== 'undefined') {
@@ -943,20 +943,18 @@ app.interpretation = {
 										}
 									}
 									
-									if(typeof content_item.show_all_items !== 'undefined') {
-										if(content_item.show_all_items == true) {
-											$.post(branch.root.actions, {
-												action: content_item.id+"_list_count"	
-											}, function(data) {
-												if(data == self.offset) {
-													$list_load_button.hide();	
-												} else {
-													$list_load_button.show();	
-												}
-											});
-										} else {
-											$list_load_button.hide();	
-										}
+									if(typeof content_item.show_all_items === 'undefined' || content_item.show_all_items !== true) {
+										$.post(branch.root.actions, {
+											action: content_item.id+"_list_count"	
+										}, function(data) {
+											if(data <= self.list_data.length) {
+												$list_load_button.hide();	
+											} else {
+												$list_load_button.show();	
+											}
+										});
+									} else {
+										$list_load_button.hide();	
 									}
 									
 									
@@ -1183,7 +1181,7 @@ app.interpretation = {
 									}
 									$.post(branch.root.actions, post_data, function(data) {
 										self.list_data = data;
-										$list_values_container.html("");	
+										//$list_values_container.html("");	
 										self.offset += data.length;
 										if(data.length > 0) {
 											var x = 0;
@@ -1293,6 +1291,11 @@ app.interpretation = {
 												$row.append("<div id='edit_button' class='edit_button table_column'>Edit</div>");
 												(function(data){
 													$row.find('.edit_button').click(function() {
+														var $this = $(this);
+														$this.addClass('saved');
+														setTimeout(function() {
+															$this.removeClass('saved');
+														}, 500);
 														if(data.id !== 'undefined') {
 															$.post(branch.root.actions, {
 																action: 'get_'+content_item_id_singular,
