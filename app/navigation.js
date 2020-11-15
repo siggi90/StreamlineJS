@@ -38,7 +38,7 @@ app.navigation = {
 								if(branch.root.user_id == "-1" || typeof branch.root.user_id === 'undefined') {
 									set_hash_value = "#"+branch.root.definition.routes.default_route.everyone;	
 								} else {
-									if(typeof branch.root.user_group !== 'undefined') {
+									if(typeof branch.root.user_group !== 'undefined' && typeof branch.root.definition.routes.default_route[branch.root.user_group] !== 'undefined') {
 										set_hash_value = "#"+branch.root.definition.routes.default_route[branch.root.user_group];
 									} else {
 										set_hash_value = "#"+branch.root.definition.routes.default_route.user;

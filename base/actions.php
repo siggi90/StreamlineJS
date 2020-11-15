@@ -110,8 +110,43 @@
 				//echo $if_statement."<br>";
 				if(eval($if_statement)) {
 					$statement = class_method($module, $action, $app, $post_flag);
+				} else {
+					$item_split = explode("_", $action);
+					//var_dump($item_split);
+					$item_id = $item_split[0];
+					if($item_split[0] == 'get' || $item_split[0] == '') {
+						$item_id = $item_split[1];
+						unset($item_split[1]);	
+					} else {
+						unset($item_split[0]);
+					}
+					//var_dump($item_split);
+					//var_dump($item_id);
+					if(isset($app->$module->items)) {
+						foreach($app->$module->items as $item) {
+							if($item->item_id == $item_id) {
+								$item_id = $item->item_table;	
+							}
+						}
+						if(isset($app->$module->items[$item_id])) {
+							$sub_action = implode("_", $item_split);
+							//var_dump($sub_action);
+							if($sub_action == "list") {
+								$sub_action .= "_";	
+							} else if($sub_action == "") {
+								$sub_action = "_";	
+							}
+							//echo "sub_action";
+							//var_dump($sub_action);
+							if(method_exists($app->$module->items[$item_id], $sub_action)) {
+								$module_value = $module.'->items["'.$item_id.'"]';
+								$statement = class_method($module_value, $sub_action, $app, $post_flag);
+							}
+						}
+					}
 				}
 			}
+			//var_dump($statement);
 			return $statement;
 		}
 		//$id = $_POST['id'];
@@ -174,7 +209,7 @@
 								}
 							} else {
 								$split = explode('*', $group_function)[0];
-								if(strpos($function, $split) !== false) {
+								if(strpos($function, $split) === 0) {
 									if($app->_user_group_member($access_group) != 1) {
 										$accessible = false;
 									}	

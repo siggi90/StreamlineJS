@@ -50,6 +50,40 @@ input.dark {
 	background-position: center;	
 }
 
+.images > .images_container > .image {
+		
+}
+
+.images > .images_container > .image img {
+	width:100%;	
+}
+
+.image_grid {
+	display:table;
+	table-layout:fixed;
+	width:100%;	
+	padding-top: 10px;
+	padding-bottom: 10px;
+	margin-left: auto;
+	margin-right: auto;	
+}	
+.image_grid_row {
+	display:table-row;	
+}
+
+.image_grid_row .image_grid_column {
+	display:table-cell;	
+	text-align:center;
+	color:#fff;
+}
+
+.image_grid_column img {
+	width:100%;	
+	padding: 10px;
+	box-sizing: border-box;
+	vertical-align: middle;
+}
+
 .content.list_element {
 	padding-bottom:5px;	
 }
@@ -554,6 +588,7 @@ button {
 	
 }
 
+
 .bulb {
 	border-radius:50%;
 	border:0px solid rgba(255,255,255,0.9);
@@ -563,6 +598,12 @@ button {
 	display: inline-block;
 	margin-right: 10px;
 	margin-left: 10px;
+}
+
+.bulbs {
+	text-align:center;
+	position:relative;
+	padding-top:10px;	
 }
 
 .carousel_bulbs {
@@ -1183,6 +1224,7 @@ body.night {
 .page > div {
 	border-radius:5px;
 	margin-bottom:20px;
+	position:relative;
 }
 
 .page {

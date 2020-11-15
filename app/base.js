@@ -584,7 +584,7 @@ var base = {
 				var str = 'object.'+x+' = copy.'+x;
 				eval(str);
 			}	
-			return object;
+			//return object;
 		},
 		inherit: function(parent_path, child) {
 			var statement = "var parent_object = this.root."+parent_path+";";

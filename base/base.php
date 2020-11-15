@@ -1,5 +1,5 @@
 <?
-session_set_cookie_params(0);
+//session_set_cookie_params(0);
 
 include 'config.php';
 
@@ -26,7 +26,7 @@ class base {
 		} else {
 			$this->user_id = -1;
 			$_SESSION['user_id'] = -1;	
-			unset($_SESSION['user_id']);
+			//unset($_SESSION['user_id']);
 		}
 		$this->sql = new mysql($app_id);
 		$this->statement = statement::init($this->sql, $app_id, $this->user_id);
@@ -34,6 +34,20 @@ class base {
 	
 	function get_connection() {
 		return $this->sql->get_connection();	
+	}
+	
+	function application_update($v) {
+		if(!isset($v['app_id'])) {
+			$v['app_id'] = $this->app_id;	
+		}
+		$query = "SELECT version FROM updates.software_updates, app.apps WHERE LOWER(app.apps.name) = LOWER('".$v['app_id']."') AND app.apps.id = app_id AND version > ".$v['version']." ORDER BY updates.software_updates.id DESC LIMIT 1";
+		$row = $this->sql->get_row($query, 1);
+		if(count($row) == 0) {
+			return array(
+				'version' => '-1'
+			);	
+		}
+		return $row;
 	}
 	
 	private $access_key_digits;
@@ -212,7 +226,7 @@ class base {
 			}
 			fclose($handle);
 		}
-		
+				
 		$autoload = array();
 		foreach($classes as $class => $active) {
 			array_push($this->loaded_classes, $class);

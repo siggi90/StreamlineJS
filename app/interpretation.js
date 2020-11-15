@@ -57,6 +57,9 @@ app.interpretation = {
 				this.do_load();
 			}
 		},
+		set_completed: function() {
+			this.loaded_count = this.render_completed_count;
+		},
 		do_load: function() {
 			var branch = this;
 			if(this.loading_completed) {
@@ -67,13 +70,23 @@ app.interpretation = {
 					branch.$container.find('.menu_top_container').remove();	
 				}*/
 				var clean_pages = function() {
-					branch.$container.parent().children().each(function() {
-						if($(this).attr('id') == branch.current_page.id) {
-							
-						} else {
-							$(this).remove();	
-						}
-					});
+					if(branch.animation != 'overlay') {
+						branch.$container.parent().children().each(function() {
+							if($(this).attr('id') == branch.current_page.id) {
+								
+							} else {
+								$(this).remove();	
+							}
+						});
+					} else if(branch.animation == 'overlay') {
+						branch.$container.parent().children().each(function() {
+							if($(this).attr('id') == branch.current_page.id) {
+								
+							} else {
+								$(this).addClass('blur');
+							}
+						});	
+					}
 				};
 				if(typeof branch.animation === 'undefined') {
 					branch.animation = false;	
@@ -96,6 +109,32 @@ app.interpretation = {
 									'margin-left': '0%',
 									'margin-right': '0%'
 								}, 750, 'easeOutQuad', clean_pages);
+								break;
+							case 'overlay':
+								clean_pages();
+								branch.$container.css({
+									'position': 'absolute',
+									'top': '0px',
+									'left': '0px',
+									'right': '0px',
+									'display': 'unset',
+									'opacity': 0
+								}).animate({
+									'opacity': 1
+								}, 1250, 'easeInOutExpo');
+								break;
+							case 'unset_overlay':
+								//branch.$container.show();
+								branch.$container.parent().children().each(function() {
+									branch.$container.removeClass('blur');
+									if($(this).attr('id') != branch.current_page.id) {
+										$(this).animate({
+											'opacity': 0
+										}, 565, 'ease_out_x_7', function() {
+											$(this).remove();
+										});
+									}
+								});
 								break;	
 						}
 					}, 350);
@@ -129,7 +168,7 @@ app.interpretation = {
 	current_page: null,
 	animation: false,
 	bottom_frame: null,
-	list_addition_length: 5,
+	list_addition_length: 10,
 	render_page: function(page, frame, $frame, callback, page_data, animation) {
 		var branch = this;
 		var animation = false;
@@ -142,10 +181,18 @@ app.interpretation = {
 			}
 		}
 		this.loaded_callbacks = Array();
+		//var animation_click_page = null;
 		if(this.current_page !== null) {
 			if(typeof this.current_page.animation !== 'undefined') {
-				if(this.current_page.click == page.id) {
+				if(!Array.isArray(this.current_page.click) && this.current_page.click == page.id) {
 					animation = this.current_page.animation;
+				} else if(Array.isArray(this.current_page.click) && Array.isArray(this.current_page.animation)) {
+					for(var x in this.current_page.click) {
+						if(this.current_page.click[x] == page.id) {
+							animation = this.current_page.animation[x];	
+							animation_click_page = this.current_page.click[x];
+						}
+					}
 				}
 			}
 		}
@@ -175,6 +222,9 @@ app.interpretation = {
 		}
 		this.animation = animation;
 		this.current_page = page;
+		if(typeof page.hide_user_info !== 'undefined') {
+			$('.user_info').hide();	
+		}
 		if(typeof callback !== 'undefined') {
 			this.callback = callback;
 		} else {
@@ -215,52 +265,73 @@ app.interpretation = {
 						'margin-left': '-110%',
 						//'margin-right': '110%'
 					}, 750, 'easeInOutQuint', function() {
-						
 					});
+					break;
+				case 'unset_overlay':	
 					break;
 			}
 		}
-		if($container.find('#'+page.id).length > 0) {
-			$container.find('#'+page.id).remove();	
-		}
-		var style = 'display:none; visibility:collapse;'	
-		//if(this.current_render_frame.level != 0) {
-			//style = 
-		//}
-		var icon = "";
-		if(typeof page.icon !== 'undefined') {
-			var icon_value;
-			if(page.icon === true) {
-				icon_value = page.title;
-			} else {
-				icon_value = page.icon;
+		var unset_overlay_dismissed = false;
+		var has_self_as_child = false;
+		$container.children().each(function() {
+			//alert(this.id);
+			//alert(page.id);
+			if(this.id == page.id) {
+				has_self_as_child = true;	
 			}
-			icon = "<div class='logo' style='background-image:url(/images/"+icon_value+".png)'></div>";	
+		});
+		if(animation == 'unset_overlay' && !has_self_as_child) {
+			animation = false;	
+			branch.animation = false;
 		}
-		$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title main_title' style='"+style+"'>"+page.title+"</div><div class='sub_main_title' style='visibility:collapse;'>"+page.title+"</div><div class='menu_top_container'></div></div>");
-		var $title_element = $('#'+page.id+' .main_title').first();
-		var $sub_title_element = $('#'+page.id+' .sub_main_title').first();
-		var $logo_element = $('#'+page.id+' .logo').first();
-		if(typeof page.title_link !== 'undefined') {
-			var title_href = branch.root.navigation.generate_href(page.title_link);
-			$title_element.html("<a href='"+title_href+"'>"+page.title+"</a>");	
-			$logo_element.wrap("<a href='"+title_href+"'></a>");	
-		}
-		/*alert(frame);
-		if(typeof $frame !== 'undefined') {
-			alert($frame[0].id);
-		}*/	
-		/*if((frame == 'body' && typeof $frame === 'undefined') || frame == null && typeof $frame === 'object') {
-			$container.find('.title').first().show();	
-		}*/
-		//if((frame == 'body' && typeof $frame === 'undefined') || (typeof $frame !== 'undefined' && $frame[0].id == 'body_frame')) {
-		if(page.id == 'index' || typeof page.display_title !== 'undefined') {
-			$title_element.show().css({
-				'visibility': 'visible'
-			});
-			$sub_title_element.css({
-				'visibility': 'visible'
-			});;
+		if(animation != 'unset_overlay') {
+			unset_overlay_dismissed = true;
+			if($container.find('#'+page.id).length > 0) {
+				$container.find('#'+page.id).remove();	
+			}
+			var style = 'display:none; visibility:collapse;'	
+			//if(this.current_render_frame.level != 0) {
+				//style = 
+			//}
+			var icon = "";
+			if(typeof page.icon !== 'undefined') {
+				var icon_value;
+				if(page.icon === true) {
+					icon_value = page.title;
+				} else {
+					icon_value = page.icon;
+				}
+				icon = "<div class='logo' style='background-image:url(/images/"+icon_value+".png)'></div>";	
+			}
+			$container.append("<div class='page "+class_value+"' id='"+page.id+"' style='display:none;'>"+icon+"<div class='title main_title' style='"+style+"'>"+page.title+"</div><div class='sub_main_title' style='visibility:collapse;'>"+page.title+"</div><div class='menu_top_container'></div></div>");
+			var $title_element = $('#'+page.id+' .main_title').first();
+			var $sub_title_element = $('#'+page.id+' .sub_main_title').first();
+			var $logo_element = $('#'+page.id+' .logo').first();
+			if(typeof page.title_link !== 'undefined') {
+				var title_href = branch.root.navigation.generate_href(page.title_link);
+				$title_element.html("<a href='"+title_href+"'>"+page.title+"</a>");	
+				$logo_element.wrap("<a href='"+title_href+"'></a>");	
+			}
+			/*alert(frame);
+			if(typeof $frame !== 'undefined') {
+				alert($frame[0].id);
+			}*/	
+			/*if((frame == 'body' && typeof $frame === 'undefined') || frame == null && typeof $frame === 'object') {
+				$container.find('.title').first().show();	
+			}*/
+			//if((frame == 'body' && typeof $frame === 'undefined') || (typeof $frame !== 'undefined' && $frame[0].id == 'body_frame')) {
+			if(page.id == 'index' || typeof page.display_title !== 'undefined') {
+				$title_element.show().css({
+					'visibility': 'visible'
+				});
+				$sub_title_element.css({
+					'visibility': 'visible'
+				});;
+			}
+			/*if(animation == 'unset_overlay') {
+				animation = false;			
+				branch.animation = false;	
+			}*/
 		}
 		$container = $container.find('#'+page.id);
 		branch.$container = $container;
@@ -269,8 +340,61 @@ app.interpretation = {
 		this.loaded_object.new();
 		var content = page.content;
 		//var $element;
+		//alert(animation);
+		if(animation == 'unset_overlay') {
+			branch.loaded_objects[page.id].set_completed();
+			branch.loaded_objects[page.id].do_load();
+			return;	
+		}
+		var post_data_linked_elements = {};
+		
 		for(var x in content) {
-			var content_item = content[x];
+			var id = content[x].id;
+			var type = content[x].type;
+			if(typeof content[x].post_data !== 'undefined') {
+				for(var z in content[x].post_data) {
+					var post_data_item = content[x].post_data[z];
+					if(post_data_item.indexOf('.') !== -1) {
+						var split = post_data_item.split('.');
+						var form = split[0];
+						var form_element = split[1];
+						if(typeof post_data_linked_elements[form] === 'undefined') {
+							post_data_linked_elements[form] = {};	
+						}
+						if(typeof post_data_linked_elements[form][form_element] === 'undefined') {
+							post_data_linked_elements[form][form_element] = Array();	
+						}
+						post_data_linked_elements[form][form_element].push(id+'_'+type);
+					}
+				}
+			}
+			if(type == 'form') {
+				for(var e in content[x].content) {
+					if(typeof content[x].content[e].post_data !== 'undefined') {
+						for(var z in content[x].content[e].post_data) {
+							var post_data_item = content[x].content[e].post_data[z];
+							if(post_data_item.indexOf('.') !== -1) {
+								var split = post_data_item.split('.');
+								var form = split[0];
+								var form_element = split[1];
+								if(typeof post_data_linked_elements[form] === 'undefined') {
+									post_data_linked_elements[form] = {};	
+								}
+								if(typeof post_data_linked_elements[form][form_element] === 'undefined') {
+									post_data_linked_elements[form][form_element] = Array();	
+								}
+								post_data_linked_elements[form][form_element].push(id+'_'+type+"."+content[x].content[e].id);
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		for(var x in content) {
+			var content_item = {};
+			branch.root.functions.copy_object(content_item, content[x]);
+			
 			var content_item_object;
 			(function(content_item){
 				var $content_item_element;
@@ -279,6 +403,36 @@ app.interpretation = {
 					style_requirment = "display:none;";	
 				}
 				switch(content_item.type) {
+					case "wrap":
+						switch(content_item.element) {
+							case 'a':
+								var wrap_elements = Array();
+								for(var i in content_item.wrap_elements) {
+									wrap_elements.push($container.find('#'+content_item.wrap_elements[i])[0]);
+										
+								}
+								var properties_string = "";
+								for(var x in content_item.properties) {
+									var value = content_item.properties[x];
+									if(typeof page_data !== 'undefined') {
+										value = page_data[content_item.properties[x]];
+									}	
+									properties_string += " "+x+"='"+value+"'";	
+								}
+								$(wrap_elements).wrapAll("<div id='"+content_item.id+"_wrap'><a "+properties_string+"></a></div>");
+								break;	
+						}
+						var $wrapped = $container.find('#'+content_item.id+'_wrap').first();
+						if(typeof content_item.inject !== 'undefined') {
+							var $inject_element = $container.find('#'+content_item.inject).first();
+							$inject_element.wrap("<div id='"+content_item.inject+"_container'></div>");
+							$inject_element.parent().append("<br>"+$wrapped.first()[0].outerHTML);	
+							$wrapped.remove();
+							$wrapped = $inject_element.parent().find('#'+content_item.id+'_wrap').first();
+						}
+						$content_item_element = $wrapped;
+						branch.loaded_objects[page.id].loaded();
+						break;
 					case "function_call":
 						$container.append("<div class='function_call content_light' id='function_"+content_item.id+"'><button class='button' style='width:unset'>"+content_item.value+"</button><div style='display:none;' class='loading_spinner'><div><i class='icofont-spinner-alt-2'></i></div></div></div>");
 						var $function_button = $container.find('#function_'+content_item.id).first();
@@ -333,6 +487,57 @@ app.interpretation = {
 						if(typeof value !== 'undefined') {
 							$container.append("<div class='image' id='"+content_item.id+"'><img src='"+content_item.image_location+'/'+value+"' class='max_original_size' /></div>");
 							$content_item_element = $container.find('.image#'+content_item.id).first();
+						}
+						branch.loaded_objects[page.id].loaded();
+						break;
+					case 'images':
+						$container.append("<div class='images' id='"+content_item.id+"_images'><div class='images_container'></div><div class='bulbs'></div></div>");
+						$content_item_element = $container.find('.images#'+content_item.id+"_images").first();
+						if(typeof page_data['images'] !== 'undefined') {
+							var $image_container = $content_item_element.find('.images_container').first();
+							var $bulbs = $content_item_element.find('.bulbs').first();
+							var images = page_data['images'];
+							var hide_arrows = false;
+							if(images.length == 1) {
+								hide_arrows = true;	
+							}
+							var max_height = -1;
+							for(var x in images) {
+								$image_container.append("<div class='image' id='"+images[x].id+"'><img src='"+content_item.image_location+"/"+images[x].image+"'/></div>");
+								var $image = $image_container.find('.image#'+images[x].id).first();
+								(function($image) {
+									$bulbs.append("<div class='bulb' id='"+images[x].id+"_bulb'></div>");
+									var $bulb = $bulbs.find('.bulb#'+images[x].id+'_bulb').first();
+									$bulb.click(function() {
+										$bulbs.children().removeClass('bulb_selected');
+										$(this).addClass('bulb_selected');
+										$image_container.find('.current_image').css({
+											//'position': 'absolute'
+										}).removeClass('current_image').fadeOut('slow', function() {
+											//$bulbs.find('.bulb#'+image[x].id+'_bulb').addClass('bulb_selected');
+											$image.addClass('current_image').fadeIn('fast');
+											$(this).css({
+												'position': 'unset'
+											});
+										});
+									});
+									//$image_container.find('.image').hide();
+									//$image.show();
+									//if(max_height == -1 || $image.height() > max_height) {
+									//	max_height = $image_container.height();	
+									//}
+									if(x > 0) {
+										$image.hide();	
+									} else {
+										$image.addClass('current_image');	
+										$bulb.addClass('bulb_selected');
+									}
+								}($image));
+							}
+							/*alert(max_height);
+							$image_container.css({
+								'height': max_height+'px'
+							});*/
 						}
 						branch.loaded_objects[page.id].loaded();
 						break;
@@ -398,7 +603,9 @@ app.interpretation = {
 						if(typeof content_item.submit_mask !== 'undefined') {
 							for(var i in content_item.submit_mask) {
 								var item = content_item.submit_mask[i];
-								if(item.indexOf('.') !== -1) {
+								if(item.indexOf("'") !== -1) {
+									post_data[i] = item.split("'").join('');
+								} else if(item.indexOf('.') !== -1) {
 									var item_split = item.split(".");
 									var item_object = item_split[0];
 									var item_property = item_split[1];	
@@ -636,9 +843,16 @@ app.interpretation = {
 								$menu_container.append("<div class='menu_button "+item.id+"_button' id='"+item.id+"_button'><a>"+title+"</a></div>");	
 							}
 							var content = content_item.content_parsed;
+							var page_send_data = null;
+							if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
+								page_send_data = {};
+								for(var x in content_item.post_data) {
+									page_send_data[x] = page_data[content_item.post_data[x]];	
+								}
+							}
 							$menu_container.children().each(function(index) {
 								var menu_data = content[index];
-								$(this).find('a').first().attr('href', branch.root.navigation.generate_href(menu_data.id, null, null, null, content_item.target));
+								$(this).find('a').first().attr('href', branch.root.navigation.generate_href(menu_data.id, null, null, page_send_data, content_item.target));
 							});
 							for(var i in custom_pages) {
 								var item = custom_pages[i];
@@ -680,9 +894,16 @@ app.interpretation = {
 							branch.loaded_objects[page.id].loaded();
 						};
 						if(content_item.content === 'fetch') {
-							$.post(branch.root.actions, {
+							var post_data = {
 								'action': 'get_menu_'+content_item.id
-							}, function(data) {
+							};
+							if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
+								for(var x in content_item.post_data) {
+									post_data[x] = page_data[content_item.post_data[x]];	
+								}
+							}
+							console.log(post_data);
+							$.post(branch.root.actions, post_data, function(data) {
 								content_item.content = data.pages;
 								if(typeof data.order !== 'undefined') {
 									content_item.order = data.order;
@@ -709,35 +930,14 @@ app.interpretation = {
 						eval(assign_statement);
 						branch.loaded_objects[page.id].loaded();
 						break;
-					case 'list':
-						$container.append("<div id='"+content_item.id+"_list' class='list'></div>");
-						var $list = $container.find('#'+content_item.id+"_list").first();
+					case 'grid':
+						$container.append("<div id='"+content_item.id+"_grid' class='grid'></div>");
+						var $grid = $container.find('#'+content_item.id+"_grid").first();
 						$content_item_element = $list;
-						var $search;
-						if(typeof content_item.title !== 'undefined') {
-							$list.append("<div class='title'>"+content_item.title+"</div>");	
-						}
-						var template_selector;
-						var li_template;
-						if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {								
-							template_selector = '#'+content_item.template+'_li_template';
-							li_template = $('#templates > '+template_selector).first()[0].outerHTML;	
-						}
-						var target_frame = content_item.target;
-						var target_frame_object = branch.root.eval_object_path(branch.root.find("elements.frames", target_frame), "this");
-						var target_frame_depth = branch.root.depth(target_frame_object, branch.root.elements.frames, 0) - 1;
-						$list.append("<div class='list_content'></div>");
-						$list.append("<div class='list_load_button'>Load more items</div>");
-						var $list_container = $list;
-						var $list_load_button = $list_container.find('.list_load_button').first();
-						$list = $list.find('.list_content');
-						var image_root = "images";
-						if(typeof content_item.image_location !== 'undefined') {
-							image_root = content_item.image_location;	
-						}
-						var list_operation = {
+						
+						var grid_operation = {
 							offset: 0,
-							$list: $list,
+							$grid: $grid,
 							components: Array(),
 							load: function(send_data, search_term) {
 								var self = this;
@@ -755,7 +955,7 @@ app.interpretation = {
 								$list_values_container = self.$list;//branch.view.dummy_div.new();	//$('.dummy_div').first();
 								//$list_values_container.html("");	
 								var post_data = {
-									action: content_item.id+"_list",
+									action: content_item.id+"_grid",
 									search_term: search_term,
 									offset: self.offset	
 								};
@@ -781,292 +981,477 @@ app.interpretation = {
 										eval(statement);	
 									}
 								}
+								/*if(typeof post_data.search_field !== 'undefined') {
+									var $search_field = $list.parent().find('.search_bar').find('.search').first();
+									$search_field.val(post_data.search_field);
+									if(content_item.search === true) {
+										post_data.search_term = post_data.search_field;	
+									}
+									delete post_data.search_field;
+								}*/
 								$.post(branch.root.actions, post_data, function(data) {
-									self.list_data = data;
-									//self.offset += data.length;
-									var username_target_depth = 1;			
-									if(typeof content_item.content !== 'undefined') {					
-										if(typeof content_item.content.username.target !== 'undefined') {
-											username_target_depth = branch.root.navigation.frames.find_frame_depth(content_item.content.username.target);	
-										}
+									var $grid_template = $('#templates > #'+content_item.id+'_grid_template').first();
+									var grid_template = $grid_template[0].outerHTML;
+									$grid.html(grid_template);
+									var column_template = $grid_template.find('#grid_column_template').first()[0].outerHTML;
+									//var column_template = $(column_template).find('#grid_column_template').html("")[0].outerHTML;
+									var row_template = $grid_template.find('#grid_row_template').first()[0].outerHTML;
+									
+									var $grid_container = $grid.find('#'+content_item.id+'_grid_template').first();
+									$grid_container.attr('id', content_item.id+'_grid').html("");
+									//for(var x in data) {
+									var item_index = 0;
+									var $row;
+									var row_count = 0;
+									var $column;
+									var image_directory = 'images';
+									if(typeof content_item.image_location !== 'undefined') {
+										image_directory = content_item.image_location;	
 									}
-									$list_values_container.html("");	
-									for(var x in data) {
-										var list_item_href = "";
-										if(typeof content_item.click !== 'undefined') {
-											list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id);
-										}
-										
-										
-										if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {
-											var row_item = li_template;
+									//var width_set = null;
+									while(item_index < data.length) {
+										var column_count = 0;
+										while(column_count < 5 && item_index < data.length) {
+											if(column_count == 0) {
+												$grid_container.append(row_template);
+												$row = $grid_container.find('#grid_row_template').first();
+												$row.attr('id', row_count);	
+												$row.html("");
+												row_count++;
+											}
+											$row.append(column_template);
+											$column = $row.find('#grid_column_template').first();
+											$column.attr('id', data[item_index].id);
 											
-											$list_values_container.append(row_item);
+											$column.append("<img src='"+image_directory+"/"+data[item_index].image+"' />");
 											
-											var li_id = content_item.id+'_'+data[x].id;
-											$list_values_container.find(template_selector).first().attr('id', li_id);
-											var $li = $list_values_container.find('#'+li_id).first();
-											for(var v in data[x]) {
-												if(v.indexOf('_column_value') == -1) {
-													var li_id_suffix = v;
-													if(typeof content_item.class_mask !== 'undefined') {
-														if(typeof content_item.class_mask[li_id_suffix] !== 'undefined') {
-															li_id_suffix = content_item.class_mask[li_id_suffix];
-														}
-													}
-													var $column = $li.find('.'+li_id_suffix).first();
-													$column.html(data[x][v]);
-													if(typeof data[x][v+'_column_value'] !== 'undefined') {
-														$column.attr('value', data[x][v+'_column_value']);
-													}
-													
-													if(typeof content_item.columns_click !== 'undefined') {
-														if(typeof content_item.columns_click[v] !== 'undefined') {
-															if(content_item.columns_click[v] == 'click') {
-																$column.html("<a href='"+list_item_href+"'>"+$column.html()+"</a>");
-															} else {
-																var click_item = content_item.columns_click[v];
-																var post_data = {
-																	
-																};
-																var click_value = content_item.click;
-																if(typeof click_item.click !== 'undefined') {
-																	click_value = click_item.click;	
-																}
-																if(typeof click_item.post_data !== 'undefined') {
-																	for(var p in click_item.post_data) {
-																		if(click_item.post_data[p] == "value") {
-																			post_data[p] = data[x][v];
-																			if(typeof $column.attr('value') !== 'undefined') {
-																				post_data[p] = $column.attr('value');	
-																			}
-																		} else if(typeof page_data !== 'undefined') {
-																			post_data[p] == page_data[click_Item.post_data[p]];	
-																		}
-																	}
-																}
-																var id = null;
-																if(typeof post_data.id !== 'undefined') {
-																	id = post_data.id;
-																	delete post_data.id;
-																}
-																var column_href = "";
-																if(click_item.target == 'self') {
-																	column_href = branch.root.navigation.generate_href(click_value, null, id, post_data, frame_id);	
-																} else {
-																	var target_frame_object_column = branch.root.eval_object_path(branch.root.find("elements.frames", click_item.target), "this");
-																	var target_frame_depth_column = branch.root.depth(target_frame_object_column, branch.root.elements.frames, 0) - 1;
-																	column_href = branch.root.navigation.gernerate_href(click_value, target_frame_depth_column, id, post_data, frame_id);
-																}
-																$column.html("<a href='"+column_href+"'>"+$column.html()+"</a>");
-															}
-														}
-													}
-												}
+											$column.find('img').wrap("<a></a>");
+											$column.find('a').attr('href', branch.root.navigation.generate_href(content_item.click, null, data[item_index].id, null, content_item.target_frame))
+											/*.click(function() {
+												branch.animation = content_item.animation;
+												alert(branch.animation);
+											});*/
+											
+											column_count++;
+											if(column_count == 5) {
+												/*$row.find('img').each(function() {
+													var width = $(this).width();
+													var height = $(this).height();
+													width_set = width;
+													$(this).css({
+														width: width+'px',
+														height: height+'px'
+													});
+												});*/
+												column_count = 0;	
 											}
-										} else {
-											var row_item = "<div class='list_item' id='"+data[x].id+"'>";
-											if(typeof data[x].title !== 'undefined') {
-												if(list_item_href != "") {
-													row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
-												} else {
-													row_item += "<div class='title list_element'>"+data[x].title+"</div>";
-												}
-												delete data[x].title;
-											}
-											if(typeof data[x].image !== 'undefined') {
-												//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
-												if(list_item_href != "") {
-													row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
-												} else {
-													row_item += "<img src='"+image_root+"/"+data[x].image+"' class='max_original_size' />";
-												}
-												delete data[x].image;
-											}
-											var line_clamp = "";
-											if(typeof content_item.clamp_content !== 'undefined') {
-												line_clamp = "line_clamp";
-											}
-											if(typeof data[x].content !== 'undefined') {
-												row_item += "<div class='content list_element "+line_clamp+"'>"+data[x].content+"</div>";
-												delete data[x].content;
-											}
-											delete data[x].id;
-											if(typeof data[x].username !== 'undefined') {
-												var user_href = branch.root.navigation.generate_href("user", username_target_depth, data[x].user_id);
-												row_item += "<div class='username list_element'><a href='"+user_href+"'>"+data[x].username+"</a></div>";
-												delete data[x].username;
-												delete data[x].user_id;
-											}
-											if(typeof data[x].username !== 'undefined') {
-												
-												delete data[x].user_id;
-											}
-											//row_item += "<div class='list_item_information'>";
-											var li_information_count = 0;
-											for(var y in data[x]) {
-												if(li_information_count > 0) {
-													//row_item += "<div class='list_element column_split'>|</div>";	
-												}
-												
-												var caption = "";
-												var column_title = y;
-												if(typeof content_item.columns !== 'undefined') {
-													if(typeof content_item.columns[y] !== 'undefined') {
-														if(typeof content_item.columns[y] !== 'object') {
-															column_title = content_item.columns[y];	
-														} else {
-															if(typeof branch.root.language !== 'undefined') {
-																column_title = content_item.columns[y][parseInt(branch.root.language)+1];	
-															}
-														}
-													}
-												}
-												if(column_title != null) {
-													caption = "<div class='caption'>"+column_title+"</div>";
-												}
-												row_item += "<div class='list_element_wrap'>"+caption+"<div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
-												li_information_count++;
-												
-											}
-											row_item += "</div>";//</div>";
-											$list_values_container.append(row_item);
-											var $li = $list_values_container.find('#'+data[x].id).first();
-										}
-										
-										if(typeof content_item.components !== 'undefined') {
-											self.components[x] = ({});
-											for(var v in content_item.components) {
-												self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self);
-												self.components[x][v].init();
-											}
+											item_index++;
 										}
 									}
-									
-									if(typeof content_item.show_all_items === 'undefined' || content_item.show_all_items !== true) {
-										$.post(branch.root.actions, {
-											action: content_item.id+"_list_count"	
-										}, function(data) {
-											if(data <= self.list_data.length) {
-												$list_load_button.hide();	
-											} else {
-												$list_load_button.show();	
-											}
-										});
-									} else {
-										$list_load_button.hide();	
-									}
-									
-									
-									if(typeof content_item.date_columns !== 'undefined') {
-										for(var c in content_item.date_columns) {
-											(function(c) {
-												var date_column_class = content_item.date_columns[c];
-												var popover = true;
-												var time = true;
-												if(typeof date_column_class === 'object') {
-													var date_column_object = date_column_class;
-													date_column_class = date_column_class.class;	
-													if(typeof date_column_object.popover !== 'undefined') {
-														popover = date_column_object.popover;	
-													}
-													if(typeof date_column_object.time !== 'undefined') {
-														time = date_column_object.time;	
-													}
-												}
-												$list_values_container.find('.'+date_column_class).each(function() {
-													if(!$(this).parent().hasClass('table_header')) {
-														var $this = $(this);
-														branch.view.date.date_cell($this, time, popover);
-													}
-												});
-											}(c));
-										}
-									}
-									
-									//branch.view.display_changes(self.$list, $list_values_container);
-									/*$list_values_container.find('.list_item_information').each(function() {				
-										branch.root.interpretation.view.single_row_columns($(this));
-									});*/
-									
+									$grid_container.css({
+										'width': '5%',
+										'opacity': 0
+									}).animate({
+										'width': '100%',
+										'opacity': 1
+									}, 3500, 'easeInOutQuint');
 									branch.loaded_objects[page.id].loaded();
 								}, "json");
-							},
-							scroll_call: function() {
-								var scroll_point = $list.offset().top + $list.height();
-								var scroll_bottom = $(document).scrollTop() + $(window).height();
-								if(scroll_bottom > scroll_point-200) {
-									//alert(scroll_point);
-									this.load(true);	
-								}
 							}
 						};
-						list_operation.load();
-						
-						$list_load_button.click(function() {
-							list_operation.offset += branch.list_addition_length;
-							list_operation.load();
-						});
-						var list_object = {
+						var grid_object = {
 							id: content_item.id,
 							$element: $list,
-							operation: list_operation	
+							operation: grid_operation	
 						};
-						branch.root.elements.lists[content_item.id+"_list"] = list_object;
-						
-						if(typeof content_item.search !== 'undefined') {
-							$list.parent().prepend("<div class='search_bar'><input type='text' class='search' placeholder='search' /></div>");
-							$search = $list.parent().find('.search_bar').find('.search').first();
-							if(content_item.search != 'filter') {
-								$search.keyup(function(e) {
-									var search_term = $(this).val().toLowerCase().trim();
-									if(search_term != "") {
-										/*$list.find('.list_item').each(function() {
-											if($(this).text().toLowerCase().indexOf(search_term) != -1) {
-												$(this).show();	
-											} else {
-												$(this).hide();	
-											}
-										});*/							
-										list_operation.load(null, search_term);
-									} else {
-										/*$list.find('.list_item').each(function() {
-											$(this).show();
-										});*/						
-										list_operation.load();
-									}
-								});
-							} else {
-								$search.keyup(function(e) {
-									var search_term = $(this).val().toLowerCase().trim();
-									if(search_term != "") {
-										$list.find('.list_item').each(function() {
-											if($(this).text().toLowerCase().indexOf(search_term) != -1) {
-												$(this).show();	
-											} else {
-												$(this).hide();	
-											}
-										});						
-									} else {
-										$list.find('.list_item').each(function() {
-											$(this).show();
-										});				
-									}
-								});	
+						branch.root.elements.lists[content_item.id+"_grid"] = grid_object;
+						grid_object.operation.load();
+						break;
+					case 'list':
+						$container.append("<div id='"+content_item.id+"_list' class='list'></div>");
+						var $list = $container.find('#'+content_item.id+"_list").first();
+						$content_item_element = $list;
+						//(function($list) {
+							var $search;
+							if(typeof content_item.title !== 'undefined') {
+								$list.append("<div class='title'>"+content_item.title+"</div>");	
 							}
-						}
-						
-						/*$(window).scroll(function() {
-							//alert($(document).scrollTop());
-							if(content_item.search !== 'undefined') {
-								var search_term = $search.val().toLowerCase().trim();
-								if(search_term == "") {
-									list_operation.scroll_call();	
+							var template_selector;
+							var li_template;
+							if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {								
+								template_selector = '#'+content_item.template+'_li_template';
+								li_template = $('#templates > '+template_selector).first()[0].outerHTML;	
+							}
+							var target_frame = content_item.target;
+							var target_frame_object = branch.root.eval_object_path(branch.root.find("elements.frames", target_frame), "this");
+							var target_frame_depth = branch.root.depth(target_frame_object, branch.root.elements.frames, 0) - 1;
+							$list.append("<div class='list_content'></div>");
+							$list.append("<div class='list_load_button'>Load more items</div>");
+							var $list_container = $list;
+							var $list_load_button = $list_container.find('.list_load_button').first();
+							$list = $list.find('.list_content');
+							var image_root = "images";
+							if(typeof content_item.image_location !== 'undefined') {
+								image_root = content_item.image_location;	
+							}
+							var list_operation = {
+								offset: 0,
+								$list: $list,
+								components: Array(),
+								load: function(send_data, search_term) {
+									var self = this;
+									self.components = Array();
+									/*if(typeof no_refresh === 'undefined') {
+									}*/
+									/*if(typeof no_refresh !== 'undefined') {
+										$list = $('.dummy_div').first();	
+									} else {
+										$list = self.$list;	
+									}*/
+									if(typeof search_term === 'undefined') {
+										search_term = '';	
+									}
+									var $list_values_container = self.$list;//branch.view.dummy_div.new();	//$('.dummy_div').first();
+									//$list_values_container.html("");	
+									var post_data = {
+										action: content_item.id+"_list",
+										search_term: search_term,
+										offset: self.offset	
+									};
+									if(typeof content_item.default_values !== 'undefined') {
+										for(var x in content_item.default_values) {
+											post_data[x] = content_item.default_values[x];	
+										}
+									}
+									if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
+										for(var x in content_item.post_data) {
+											if(typeof page_data[content_item.post_data[x]] !== 'undefined') {
+												var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
+												eval(statement);
+											}
+											/*if(typeof post_data[x] === 'undefined') {
+												post_data[x] = null;	
+											}*/
+										}
+									}
+									if(typeof send_data !== 'undefined') {
+										for(var x in send_data) {
+											var statement = "post_data."+x+" = page_data."+send_data[x];
+											eval(statement);	
+										}
+									}
+									if(typeof post_data.search_field !== 'undefined') {
+										var $search_field = $list.parent().find('.search_bar').find('.search').first();
+										$search_field.val(post_data.search_field);
+										if(content_item.search === true) {
+											post_data.search_term = post_data.search_field;	
+										}
+										delete post_data.search_field;
+									}
+									$.post(branch.root.actions, post_data, function(data) {
+										self.list_data = data;
+										//self.offset += data.length;
+										var username_target_depth = 1;			
+										if(typeof content_item.content !== 'undefined') {					
+											if(typeof content_item.content.username.target !== 'undefined') {
+												username_target_depth = branch.root.navigation.frames.find_frame_depth(content_item.content.username.target);	
+											}
+										}
+										$list_values_container.html("");	
+										for(var x in data) {
+											var list_item_href = "";
+											if(typeof content_item.click !== 'undefined') {
+												list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id);
+											}
+											
+											
+											if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {
+												var row_item = li_template;
+												
+												$list_values_container.append(row_item);
+												
+												var li_id = content_item.id+'_'+data[x].id;
+												$list_values_container.find(template_selector).first().attr('id', li_id);
+												var $li = $list_values_container.find('#'+li_id).first();
+												for(var v in data[x]) {
+													if(v.indexOf('_column_value') == -1) {
+														var li_id_suffix = v;
+														if(typeof content_item.class_mask !== 'undefined') {
+															if(typeof content_item.class_mask[li_id_suffix] !== 'undefined') {
+																li_id_suffix = content_item.class_mask[li_id_suffix];
+															}
+														}
+														var $column = $li.find('.'+li_id_suffix).first();
+														$column.html(data[x][v]);
+														if(typeof data[x][v+'_column_value'] !== 'undefined') {
+															$column.attr('value', data[x][v+'_column_value']);
+														}
+														
+														if(typeof content_item.columns_click !== 'undefined') {
+															if(typeof content_item.columns_click[v] !== 'undefined') {
+																if(content_item.columns_click[v] == 'click') {
+																	$column.html("<a href='"+list_item_href+"'>"+$column.html()+"</a>");
+																} else {
+																	var click_item = content_item.columns_click[v];
+																	var post_data = {
+																		
+																	};
+																	var click_value = content_item.click;
+																	if(typeof click_item.click !== 'undefined') {
+																		click_value = click_item.click;	
+																	}
+																	if(typeof click_item.post_data !== 'undefined') {
+																		for(var p in click_item.post_data) {
+																			if(click_item.post_data[p] == "value") {
+																				post_data[p] = data[x][v];
+																				if(typeof $column.attr('value') !== 'undefined') {
+																					post_data[p] = $column.attr('value');	
+																				}
+																			} else if(typeof page_data !== 'undefined') {
+																				post_data[p] == page_data[click_Item.post_data[p]];	
+																			}
+																		}
+																	}
+																	var id = null;
+																	if(typeof post_data.id !== 'undefined') {
+																		id = post_data.id;
+																		delete post_data.id;
+																	}
+																	var column_href = "";
+																	if(click_item.target == 'self') {
+																		column_href = branch.root.navigation.generate_href(click_value, null, id, post_data, frame_id);	
+																	} else {
+																		var target_frame_object_column = branch.root.eval_object_path(branch.root.find("elements.frames", click_item.target), "this");
+																		var target_frame_depth_column = branch.root.depth(target_frame_object_column, branch.root.elements.frames, 0) - 1;
+																		column_href = branch.root.navigation.gernerate_href(click_value, target_frame_depth_column, id, post_data, frame_id);
+																	}
+																	$column.html("<a href='"+column_href+"'>"+$column.html()+"</a>");
+																}
+															}
+														}
+													}
+												}
+											} else {
+												var external_link;
+												if(typeof data[x].external_link !== 'undefined') {
+													external_link = data[x].external_link;
+													delete data[x].external_link;
+												}
+												var row_item = "<div class='list_item' id='"+data[x].id+"'>";
+												if(typeof data[x].title !== 'undefined') {
+													if(list_item_href != "") {
+														row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
+													} else {
+														row_item += "<div class='title list_element'>"+data[x].title+"</div>";
+													}
+													delete data[x].title;
+												}
+												if(typeof data[x].image !== 'undefined') {
+													//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
+													if(list_item_href != "") {
+														row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
+													} else {
+														row_item += "<img src='"+image_root+"/"+data[x].image+"' class='max_original_size' />";
+													}
+													delete data[x].image;
+												}
+												var line_clamp = "";
+												if(typeof content_item.clamp_content !== 'undefined') {
+													line_clamp = "line_clamp";
+												}
+												if(typeof data[x].content !== 'undefined') {
+													row_item += "<div class='content list_element "+line_clamp+"'>"+data[x].content+"</div>";
+													delete data[x].content;
+												}
+												var row_id = data[x].id;
+												delete data[x].id;
+												if(typeof data[x].username !== 'undefined') {
+													var user_href = branch.root.navigation.generate_href("user", username_target_depth, data[x].user_id);
+													row_item += "<div class='username list_element'><a href='"+user_href+"'>"+data[x].username+"</a></div>";
+													delete data[x].username;
+													delete data[x].user_id;
+												}
+												if(typeof data[x].username !== 'undefined') {
+													
+													delete data[x].user_id;
+												}
+												
+												//row_item += "<div class='list_item_information'>";
+												var li_information_count = 0;
+												for(var y in data[x]) {
+													if(li_information_count > 0) {
+														//row_item += "<div class='list_element column_split'>|</div>";	
+													}
+													
+													var caption = "";
+													var column_title = y;
+													if(typeof content_item.columns !== 'undefined') {
+														if(typeof content_item.columns[y] !== 'undefined') {
+															if(typeof content_item.columns[y] !== 'object') {
+																column_title = content_item.columns[y];	
+															} else {
+																if(typeof branch.root.language !== 'undefined') {
+																	column_title = content_item.columns[y][parseInt(branch.root.language)+1];	
+																}
+															}
+														}
+													}
+													if(column_title != null) {
+														caption = "<div class='caption'>"+column_title+"</div>";
+													}
+													row_item += "<div class='list_element_wrap'>"+caption+"<div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
+													li_information_count++;
+													
+												}
+												/*if(typeof content_item.share_links !== 'undefined') {
+													row_item += '<div class="sharethis-inline-share-buttons"></div>';	
+												}*/
+												row_item += "</div>";//</div>";
+												$list_values_container.append(row_item);
+												var $li = $list_values_container.find('#'+row_id).first();
+												
+												if(typeof external_link !== 'undefined') {
+													//alert(data[x].external_link);
+													$li.wrap("<a href='"+external_link+"'></a>");	
+												}
+											}
+											
+											if(typeof content_item.components !== 'undefined') {
+												self.components[x] = ({});
+												for(var v in content_item.components) {
+													self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self);
+													self.components[x][v].init();
+												}
+											}
+										}
+										
+										if(typeof content_item.show_all_items === 'undefined' || content_item.show_all_items !== true) {
+											$.post(branch.root.actions, {
+												action: content_item.id+"_list_count"	
+											}, function(data) {
+												if(data <= self.list_data.length) {
+													$list_load_button.hide();	
+												} else {
+													$list_load_button.show();	
+												}
+											});
+										} else {
+											$list_load_button.hide();	
+										}
+										
+										
+										if(typeof content_item.date_columns !== 'undefined') {
+											for(var c in content_item.date_columns) {
+												(function(c) {
+													var date_column_class = content_item.date_columns[c];
+													var popover = true;
+													var time = true;
+													if(typeof date_column_class === 'object') {
+														var date_column_object = date_column_class;
+														date_column_class = date_column_class.class;	
+														if(typeof date_column_object.popover !== 'undefined') {
+															popover = date_column_object.popover;	
+														}
+														if(typeof date_column_object.time !== 'undefined') {
+															time = date_column_object.time;	
+														}
+													}
+													$list_values_container.find('.'+date_column_class).each(function() {
+														if(!$(this).parent().hasClass('table_header')) {
+															var $this = $(this);
+															branch.view.date.date_cell($this, time, popover);
+														}
+													});
+												}(c));
+											}
+										}
+										
+										//branch.view.display_changes(self.$list, $list_values_container);
+										/*$list_values_container.find('.list_item_information').each(function() {				
+											branch.root.interpretation.view.single_row_columns($(this));
+										});*/
+										if(typeof $search_field !== 'undefined') {
+											$search_field.trigger('keyup');
+										}
+										branch.loaded_objects[page.id].loaded();
+									}, "json");
+								},
+								scroll_call: function() {
+									var scroll_point = $list.offset().top + $list.height();
+									var scroll_bottom = $(document).scrollTop() + $(window).height();
+									if(scroll_bottom > scroll_point-200) {
+										//alert(scroll_point);
+										this.load(true);	
+									}
 								}
-							} else {
-								list_operation.scroll_call();
+							};
+							
+							$list_load_button.click(function() {
+								list_operation.offset += branch.list_addition_length;
+								list_operation.load();
+							});
+							var list_object = {
+								id: content_item.id,
+								$element: $list,
+								operation: list_operation	
+							};
+							branch.root.elements.lists[content_item.id+"_list"] = list_object;
+							
+							if(typeof content_item.search !== 'undefined') {
+								$list.parent().prepend("<div class='search_bar'><input type='text' class='search' placeholder='search' /></div>");
+								$search = $list.parent().find('.search_bar').find('.search').first();
+								if(content_item.search != 'filter') {
+									$search.keyup(function(e) {
+										var search_term = $(this).val().toLowerCase().trim();
+										if(search_term != "") {
+											/*$list.find('.list_item').each(function() {
+												if($(this).text().toLowerCase().indexOf(search_term) != -1) {
+													$(this).show();	
+												} else {
+													$(this).hide();	
+												}
+											});*/							
+											list_operation.load(null, search_term);
+										} else {
+											/*$list.find('.list_item').each(function() {
+												$(this).show();
+											});*/						
+											list_operation.load();
+										}
+									});
+								} else {
+									$search.keyup(function(e) {
+										var search_term = $(this).val().toLowerCase().trim();
+										if(search_term != "") {
+											$list.find('.list_item').each(function() {
+												if($(this).text().toLowerCase().indexOf(search_term) != -1) {
+													$(this).show();	
+												} else {
+													$(this).hide();	
+												}
+											});						
+										} else {
+											$list.find('.list_item').each(function() {
+												$(this).show();
+											});				
+										}
+									});	
+								}
 							}
-						});*/
+							list_operation.load();
+							
+							/*$(window).scroll(function() {
+								//alert($(document).scrollTop());
+								if(content_item.search !== 'undefined') {
+									var search_term = $search.val().toLowerCase().trim();
+									if(search_term == "") {
+										list_operation.scroll_call();	
+									}
+								} else {
+									list_operation.scroll_call();
+								}
+							});*/
+						//}($list));
 						break;
 					case 'table':
 						var is_search_object = false;
@@ -1133,7 +1518,6 @@ app.interpretation = {
 								order_values[index_dragged] = "-1";
 								var index_dropped = order_values.indexOf(dropped_value);
 								order_values.splice(index_dropped, 0, dragged_value);
-								
 								$.post(branch.root.actions, {
 									'action': content_item.id+'_set_order',
 									'v': JSON.stringify(order_values)
@@ -1161,7 +1545,6 @@ app.interpretation = {
 										search_term: search_string,
 										offset: self.offset	
 									};
-									console.log(content_item.post_data);
 									if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
 										for(var x in content_item.post_data) {
 											var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
@@ -1182,7 +1565,7 @@ app.interpretation = {
 									$.post(branch.root.actions, post_data, function(data) {
 										self.list_data = data;
 										$list_values_container.html("");	
-										self.offset += data.length;
+										//self.offset += data.length;
 										if(data.length > 0) {
 											var x = 0;
 											if(typeof data[x].id === 'undefined') {
@@ -1223,7 +1606,8 @@ app.interpretation = {
 										for(var x in data) {
 											//function(
 											if(typeof data[x].id === 'undefined') {
-												data[x].id = x;	
+												data[x].id = x;
+												data[x].id_undefined = true;	
 											}
 											var row_item = "<div class='table_row' id='"+data[x].id+"'>";
 											var li_information_count = 0;
@@ -1250,6 +1634,14 @@ app.interpretation = {
 														if(content_item.content[y] == 'image') {
 															column_value = data[x][y]+".png";
 															row_item += "<div id='"+y+"' class='"+y+" "+class_value+" table_column_image' style='"+style+" background-image:url(\"/images/"+column_value+"\");'>"+"</div>";	
+														} else if(content_item.content[y] == 'checkbox') {
+															var checked = data[x][y];
+															if(checked) {
+																checked = "checked";	
+															} else {
+																checked = "";	
+															}
+															row_item += "<div id='"+y+"'  class='"+y+" "+class_value+"' ><input type='checkbox' class='"+y+"_checkbox' "+checked+" /></div>";	
 														}
 													} else {
 														column_value = data[x][y];
@@ -1296,7 +1688,7 @@ app.interpretation = {
 														setTimeout(function() {
 															$this.removeClass('saved');
 														}, 500);
-														if(data.id !== 'undefined') {
+														if(typeof data.id_undefined === 'undefined') {
 															$.post(branch.root.actions, {
 																action: 'get_'+content_item_id_singular,
 																id: data.id	
@@ -1371,6 +1763,33 @@ app.interpretation = {
 														});*/
 													}
 												}(data[x]));
+											}
+											if(typeof content_item.content !== 'undefined') {
+												(function($row) {
+													for(var c in content_item.content) {
+														switch(content_item.content[c]) {
+															case 'checkbox':
+																(function(c, $row) {
+																	$row.find('.'+c+'_checkbox').click(function() {
+																		var checked = $(this).prop('checked');
+																		if(checked) {
+																			checked = "1";	
+																		} else {
+																			checked = "0";	
+																		}
+																		//var $this = $(this);
+																		$.post(branch.root.actions, {
+																			'action': c+'_checked',
+																			'item_id': $row.find('#id').text(),
+																			'checked': checked
+																		}, function(data) {
+																		});
+																	});
+																}(c, $row));
+																break;	
+														}
+													}
+												}($row));
 											}
 											if(typeof content_item.drag_reorder !== 'undefined') {
 												(function(data) {
@@ -1454,8 +1873,9 @@ app.interpretation = {
 												init_order();	
 											}
 										});*/
-										
-										init_order();	
+										if(typeof content_item.drag_reorder !== 'undefined') {
+											init_order();	
+										}
 										
 										branch.loaded_objects[page.id].loaded();
 									}, "json"); //
@@ -1471,32 +1891,33 @@ app.interpretation = {
 							};
 							if(typeof content_item.search !== 'undefined' && typeof content_item.search_object === 'undefined') {
 								$list.parent().prepend("<div class='search_bar'><input type='text' class='search' placeholder='search' /></div>");
-								//if(content_item.search == 'filter') {
-									$search = $list.parent().find('.search_bar').find('.search').first();
-									$search.keyup(function(e) {
-										var search_term = $(this).val().toLowerCase().trim();
-										if(search_term != "") {
-											if(content_item.search == 'filter') {
-												$list.find('.list_item').each(function() {
+								$search = $list.parent().find('.search_bar').find('.search').first();
+								$search.keyup(function(e) {
+									var search_term = $(this).val().toLowerCase().trim();
+									if(search_term != "") {
+										if(content_item.search == 'filter') {
+											$list.find('.table_row').each(function() {
+												if(!$(this).hasClass('table_header')) {
 													if($(this).text().toLowerCase().indexOf(search_term) != -1) {
 														$(this).show();	
 													} else {
 														$(this).hide();	
 													}
-												});
-											} else {
-												list_operation.load(null, search_term);
-											}
+												}
+											});
 										} else {
-											if(content_item.search == 'filter') {
-												$list.find('.list_item').each(function() {
-													$(this).show();
-												});	
-											} else {
-												list_operation.load();
-											}
+											list_operation.load(null, search_term);
 										}
-									});
+									} else {
+										if(content_item.search == 'filter') {
+											$list.find('.table_row').each(function() {
+												$(this).show();
+											});	
+										} else {
+											list_operation.load();
+										}
+									}
+								});
 							}
 							if(typeof content_item.require_foreign_id === 'undefined') {
 								list_operation.load();
@@ -1542,8 +1963,23 @@ app.interpretation = {
 								$element: $form,
 								operation: {
 									elements: Array(),
+									/*find_element: function(reference) {
+										
+									},*/
 									load: function(data) {
 										var self = this;
+										
+										if(data === 'self') {
+											data = {};
+											$form.find('.form_input').each(function() {
+												if($(this).hasClass('rich_text')) {
+													data[this.id] = tinyMCE.get(id).getContent();	
+												} else {
+													data[this.id] = $(this).val();
+												}
+											});
+										}
+										
 										$form.find('.form_input').each(function() {
 											var id = $(this).attr('id');
 											if($(this).hasClass('rich_text')) {
@@ -1575,7 +2011,7 @@ app.interpretation = {
 										
 										if(typeof data === 'undefined') {
 											for(var x in this.elements) {
-												this.elements[x].operation.load();		
+												this.elements[x].operation.load();	
 											}
 										}
 										if(typeof data === 'undefined') {
@@ -1595,7 +2031,12 @@ app.interpretation = {
 											};
 											if(typeof content_item.on_load_load_mask !== 'undefined') {
 												for(var x in content_item.on_load_load_mask) {
-													send_data[content_item.on_load_load_mask[x]] = data[x];
+													if(x.indexOf("'") !== -1) {
+														x = x.split("'").join('');
+														send_data[content_item.on_load_load_mask[x]] = x;	
+													} else {
+														send_data[content_item.on_load_load_mask[x]] = data[x];
+													}
 												}
 											}
 											callback_object.operation.load(send_data);
@@ -1823,21 +2264,33 @@ app.interpretation = {
 											}
 											if(form_element.content == 'fetch') {
 												(function(form_element, select_object, $select){
-													select_object.operation.load = function() {
+													select_object.operation.load = function(send_data) {
 														var self = this;
-														$.post(branch.root.actions, {
+														var post_data = {
 															action: 'get_'+form_element.id+'_select'	
-														}, function(data) {
+														};
+														branch.apply_load_mask(post_data, form_element.post_data, page_data);
+														console.log(post_data);
+														$.post(branch.root.actions, post_data, function(data) {
 															$select.html("");
+															var first_val = data[0].id;
 															for(var x in data) {
 																var option = "<option value='"+data[x].id+"'>"+data[x].title+"</option>";	
 																$select.append(option);
 															}
 															if(typeof form_element.persist_value !== 'undefined' && form_element.persist_value == true) {
-																if(self.last_value !== 'undefined') {
+																//alert(self.last_value);
+																if(typeof self.last_value !== 'undefined') {
 																	$select.val(self.last_value);	
-																}
+																}/* else {
+																	alert(first_val);
+																	$select.val(first_val);
+																}*/
 															}
+															if(typeof form_element.on_change !== 'undefined') {
+																$select.trigger('change');	
+															}
+															
 														}, "json");
 													};
 												}(form_element, select_object, $select));
@@ -1850,6 +2303,29 @@ app.interpretation = {
 													branch.call_on_submit(form_element.on_change, send_data);
 												});
 											}
+											
+											/*for(var e in post_data_linked_elements) {
+												
+											}*/
+											var post_data_item_id = content_item.id+'_form';
+											if(typeof post_data_linked_elements[post_data_item_id] !== 'undefined') {
+												if(typeof post_data_linked_elements[post_data_item_id][form_element.id+'_id'] !== 'undefined') {
+													$select.change(function() {
+														for(var x in post_data_linked_elements[post_data_item_id][form_element.id+'_id']) {
+															var split = post_data_linked_elements[post_data_item_id][form_element.id+'_id'][x].split('.');
+															var form = split[0];
+															var element = split[1];
+															if(form == post_data_item_id) {
+																form_object.operation.elements[element].operation.load();	
+															} else {
+																var callback_object = branch.root.elements.find_element_object(form);
+																callback_object.operation.elements[element].operation.load();	
+															}
+														}
+													});
+												}
+											}
+											
 											branch.root.assign_root_object(select_object);
 											select_object.operation.init();
 											form_object.operation.elements[form_element.id] = select_object;
@@ -1983,11 +2459,16 @@ app.interpretation = {
 														} else {
 															linked_value = $(this).val();
 														}
-														if(linked_value == dependency.value) {
-															$input.addClass('ignore_value');
+														if(linked_value != null) {
+															if(linked_value.trim().length == 0) {
+																linked_value = null;	
+															}
+														}
+														if(linked_value == dependency.value || (dependency.value === 'set' && linked_value != null)) {
+															//$input.addClass('ignore_value');
 															$input.parent().show();	
 														} else {
-															$input.removeClass('ignore_value');
+															//$input.removeClass('ignore_value');
 															$input.parent().hide();	
 														}
 													}).trigger('change');
@@ -2059,6 +2540,8 @@ app.interpretation = {
 										$form.find('#id').first().val(data).trigger('change');
 										if(data == -1) {
 											form_object.operation.load();
+										} else {
+												
 										}
 										if(typeof content_item.target_page !== 'undefined') {
 											var send_data = {};
@@ -2074,13 +2557,44 @@ app.interpretation = {
 											}, send_data);*/
 											branch.root.navigation.navigate_to(content_item.target_page, send_data);
 										}
+										
 										for(var x in content_item.on_submit) {
 											var callback_item = content_item.on_submit[x];
+											var load_mask_value = true;
+											console.log(callback_item);
+											//alert(typeof callback_item);
+											//alert(typeof callback_item.link);
+											if(typeof callback_item == 'object' && typeof callback_item.link !== 'undefined') {
+												//console.log('inside');
+												load_mask_value = callback_item.load_mask;
+												callback_item = callback_item.link;	
+											}
+											
 											var split = callback_item.split("_");
 											var type = split[split.length-1]+"s";
 											var statement = "var element = branch.root.elements."+type+"['"+callback_item+"']";
 											eval(statement);
-											element.operation.load();	
+											
+											if(typeof content_item.on_submit_load_mask !== 'undefined' && load_mask_value !== false) {
+												var on_submit_send_data;
+												if(typeof on_submit_send_data === 'undefined') {
+													on_submit_send_data = {
+														
+													}
+													form_object.$element.find('.form_input').each(function() {
+														var id = $(this).attr('id');
+														on_submit_send_data[id] = $(this).val();
+													});
+												}
+											
+												var on_submit_send_data_value = {};
+												for(var x in content_item.on_submit_load_mask) {
+													on_submit_send_data_value[content_item.on_load_load_mask[x]] = on_submit_send_data[x];
+												}
+												element.operation.load(on_submit_send_data_value);	
+											} else {
+												element.operation.load();	
+											}
 										}
 										if(typeof content_item.new_on_save !== 'undefined') {
 											form_object.operation.load();	
@@ -2384,7 +2898,7 @@ app.interpretation = {
 												content_item_object.load();	
 											}
 										} else {
-											$content_item_element.hide();	
+											$content_item_element.hide();
 										}
 									} else {
 										if(typeof linked_value !== 'undefined' && linked_value == dependency.value) {
@@ -2466,11 +2980,26 @@ app.interpretation = {
 	find_page: function(page_id) {
 		return this.get_pages_data(Array(page_id))[0];	
 	},
-	apply_load_mask: function(post_data, load_mask, page_data, page) {
+	apply_load_mask: function(post_data, load_mask, page_data) {
+		var branch = this;
 		for(var z in load_mask) {
 			if(load_mask[z].indexOf('.') != -1) {
-				var statement = "var value = "+load_mask[z]+";";
-				eval(statement);
+				//var statement = "var value = "+load_mask[z]+";";
+				//eval(statement);
+				var link = load_mask[z];
+				link = link.split(".");
+				var form = link[0];
+				var form_element = link[1];
+				
+				var callback_object = branch.root.elements.find_element_object(form);
+				/*if(typeof callback_object.operation.elements[form_element] !== 'undefined') {
+					callback_object.operation.elements[form_element]	
+				} else {
+					
+				}*/
+				
+				var value = callback_object.$element.find('#'+form_element).val();
+				
 				post_data[z] = value;	
 			} else {
 				post_data[z] = page_data[load_mask[z]];	

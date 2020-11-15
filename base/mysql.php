@@ -320,6 +320,15 @@ class mysql {
 		return mysqli_insert_id($this->connection);	
 	}
 	
+	function table_columns($table) {
+		$query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '".$this->db."' AND TABLE_NAME = '".$table."'";
+		$columns = array();
+		foreach($this->sql->get_rows($query) as $row) {
+			array_push($columns, $row['COLUMN_NAME']);
+		}
+		return $columns;
+	}
+	
 	function close() {
 		//mysqli_close($this->connection[0]);
 	}
