@@ -111,36 +111,67 @@
 				if(eval($if_statement)) {
 					$statement = class_method($module, $action, $app, $post_flag);
 				} else {
-					$item_split = explode("_", $action);
-					//var_dump($item_split);
-					$item_id = $item_split[0];
-					if($item_split[0] == 'get' || $item_split[0] == '') {
-						$item_id = $item_split[1];
-						unset($item_split[1]);	
-					} else {
-						unset($item_split[0]);
-					}
-					//var_dump($item_split);
-					//var_dump($item_id);
-					if(isset($app->$module->items)) {
+					if(strpos($action, "_set_order") !== false) {
+						$set_order_split = explode("_set_order", $action)[0];
+						$action = "set_order";
+						$_POST['connect_value'] = $set_order_split;
+						$statement = class_method($module, $action, $app, $post_flag);
+					} else if(isset($app->$module->items)) {
+						$found = false;
+						$item_id = NULL;
 						foreach($app->$module->items as $item) {
-							if($item->item_id == $item_id) {
-								$item_id = $item->item_table;	
+							$item_id_value = $item->item_table;
+							if(!$found) {
+								if(strpos($action, $item_id_value) !== false) {
+									$action = str_replace($item_id_value, "!", $action);
+									$item_id = $item_id_value;
+									$found = true;	
+								}
+							}
+							$item_id_value_id = $item->item_id;
+							if(!$found) {
+								if(strpos($action, $item_id_value_id) !== false) {
+									$action = str_replace($item_id_value_id, "!", $action);
+									$item_id = $item_id_value;
+									$found = true;	
+								}
 							}
 						}
-						if(isset($app->$module->items[$item_id])) {
-							$sub_action = implode("_", $item_split);
-							//var_dump($sub_action);
-							if($sub_action == "list") {
-								$sub_action .= "_";	
-							} else if($sub_action == "") {
-								$sub_action = "_";	
+						if($found) {
+							$item_split = explode("_", $action);
+							//var_dump($item_split);
+							//$item_id = $item_split[0];
+							/*if($item_split[0] == 'get' || $item_split[0] == '') {
+								$item_id = $item_split[1];
+								unset($item_split[1]);	
+							} else {
+								unset($item_split[0]);
+							}*/
+							foreach($item_split as $key => $value) {
+								if($value == "!") {
+									unset($item_split[$key]);
+								}
 							}
-							//echo "sub_action";
-							//var_dump($sub_action);
-							if(method_exists($app->$module->items[$item_id], $sub_action)) {
-								$module_value = $module.'->items["'.$item_id.'"]';
-								$statement = class_method($module_value, $sub_action, $app, $post_flag);
+							//var_dump($item_id);
+							/*foreach($app->$module->items as $item) {
+								if($item->item_id == $item_id) {
+									$item_id = $item->item_table;	
+								}
+							}*/
+							if(isset($app->$module->items[$item_id])) {
+								$sub_action = implode("_", $item_split);
+								//var_dump($sub_action);
+								//var_dump($sub_action);
+								if($sub_action == "list") {
+									$sub_action .= "_";	
+								} else if($sub_action == "") {
+									$sub_action = "_";	
+								}
+								//echo "sub_action";
+								if(method_exists($app->$module->items[$item_id], $sub_action)) {
+									$module_value = $module.'->items["'.$item_id.'"]';
+									$statement = class_method($module_value, $sub_action, $app, $post_flag);
+								}
 							}
 						}
 					}

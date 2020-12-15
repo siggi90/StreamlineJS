@@ -21,7 +21,7 @@ class statement {
 	}
 	
 	private function value($key, $v) {
-		if(strpos($key, "_id") !== false || $key == "id") {
+		if(strpos($key, "_id") === strlen($key)-3 || $key == "id") {
 			return $v;	
 		}
 		switch($key) {
@@ -136,7 +136,7 @@ class statement {
 				} else if($row['COLUMN_NAME'] == 'password' && isset($values['password'])) {
 					$values['password'] = password_hash($values['password'], PASSWORD_DEFAULT);
 					//var_dump($values['password']);
-				} else if(strpos($row['COLUMN_NAME'], "_id") !== false && isset($values[$row['COLUMN_NAME']]) && $values[$row['COLUMN_NAME']] == "-1") {
+				} else if(strpos($row['COLUMN_NAME'], "_id") === strlen($row['COLUMN_NAME'])-3 && isset($values[$row['COLUMN_NAME']]) && $values[$row['COLUMN_NAME']] == "-1") {
 					if($allow_null == false) {
 						unset($values[$row['COLUMN_NAME']]);
 					}/* else {

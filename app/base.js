@@ -76,6 +76,23 @@ var base = {
 			//inherit(path);	
 		}
 	},
+	gather_form: function($container) {
+		var $inputs = $container.find('.input_element');
+		var object = {};
+		
+		$inputs.each(function() {
+			var id = $(this).attr('id');
+			if(typeof id === 'undefined') {
+				id = $(this).attr('class').split(" ")[0];	
+			}
+			object[id] = $(this).val();
+			if(object[id].trim().length == 0 || object[id] == "-1") {
+				delete object[id];	
+			}
+		});
+		
+		return object;
+	},
 	app_state: {
 		watch_exclude: Array(
 			'inherit',

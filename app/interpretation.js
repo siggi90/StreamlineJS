@@ -2112,6 +2112,30 @@ app.interpretation = {
 								var $input_extra;
 								(function(form_element, form_object) {
 									switch(form_element.type) {
+										case 'year':
+											var caption = "";
+											if(typeof form_element.caption !== 'undefined') {
+												caption = "<div class='caption'>"+form_element.caption+"</div>";	
+											}
+											$form.append("<div class='form_element'>"+caption+"<input type='number' id='"+form_element.id+"' maxlength='4' class='form_input' value='' /></div>");
+											$input = $form.find('#'+form_element.id).first();
+											$input.keydown(function() {
+												var $this = $(this);
+												setTimeout(function() {
+													var $value = $this.val();
+													if($value.length > 4) {
+														$this.val($value.substr(0, 4));	
+													}
+													$value = $this.val();
+													var int_value = parseInt($value);
+													if(int_value < 1800) {
+														$this.addClass('invalid');	
+													} else {
+														$this.removeClass('invalid');	
+													}
+												}, 500);
+											});
+											break;
 										case 'date':
 											var caption = "";
 											if(typeof form_element.caption !== 'undefined') {
@@ -2464,12 +2488,26 @@ app.interpretation = {
 																linked_value = null;	
 															}
 														}
-														if(linked_value == dependency.value || (dependency.value === 'set' && linked_value != null)) {
-															//$input.addClass('ignore_value');
-															$input.parent().show();	
+														var show = false;
+														if(Array.isArray(dependency.value)) {
+															if(dependency.value.indexOf(linked_value) !== -1) {
+																show = true;
+															} else {
+															}
+														} else if(linked_value == dependency.value || (dependency.value === 'set' && linked_value != null)) {
+															show = true;
 														} else {
-															//$input.removeClass('ignore_value');
-															$input.parent().hide();	
+														}
+														if(show) {
+															$input.parent().show();
+															if(typeof form_element.optional_field === 'undefined' || form_element.optional_field === false) {
+																$input.removeClass('optional_field');	
+															}
+														} else {
+															$input.parent().hide();		
+															if(!$input.hasClass('optional_field')) {
+																$input.addClass('optional_field');
+															}
 														}
 													}).trigger('change');
 												}

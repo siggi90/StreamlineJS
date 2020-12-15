@@ -323,7 +323,7 @@ class mysql {
 	function table_columns($table) {
 		$query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '".$this->db."' AND TABLE_NAME = '".$table."'";
 		$columns = array();
-		foreach($this->sql->get_rows($query) as $row) {
+		foreach($this->get_rows($query) as $row) {
 			array_push($columns, $row['COLUMN_NAME']);
 		}
 		return $columns;

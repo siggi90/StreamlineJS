@@ -6,6 +6,7 @@ class _class {
 	protected $user_id;
 	protected $statement;
 	public $items;
+	protected $language = 0;
 	
 	//public $offset_increment = 10;
 	
@@ -55,6 +56,7 @@ class _class {
 				$query = "DELETE FROM item_order WHERE connect_id = '".$value."' AND connect_value = '".$connect_value."'";
 				$this->sql->execute($query);
 				$query = "INSERT INTO item_order (connect_id, connect_value, order_value) VALUES('".$value."', '".$connect_value."', ".$key.")";
+				var_dump($query);
 				$this->sql->execute($query);
 			}
 		}

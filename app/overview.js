@@ -51,13 +51,14 @@ app.overview = {
 	hour_offset_radius: 90,
 	current_second: 90,
 	run_second_hand: function() {
-		$('#clock_center').find('#second_container').css("transform", "rotate("+(this.current_second)+"deg)");
-		$('#clock_center').find('#minute_container').css("transform", "rotate("+(this.current_minute)+"deg)");
-		$('#clock_center').find('#hour_container').css("transform", "rotate("+(this.current_hour+(this.current_minute/12))+"deg)");
 		var date = new Date();
 		this.current_second = -90 + date.getSeconds()*6;
 		this.current_minute = -90 + 6*date.getMinutes();	
 		this.current_hour = -this.hour_offset_radius+30*(date.getHours());
+		
+		$('#clock_center').find('#second_container').css("transform", "rotate("+(this.current_second)+"deg)");
+		$('#clock_center').find('#minute_container').css("transform", "rotate("+(this.current_minute)+"deg)");
+		$('#clock_center').find('#hour_container').css("transform", "rotate("+(this.current_hour+((90+this.current_minute)/12))+"deg)"); //(this.current_minute/12)		
 				
 		/*if(this.current_second == (360-90)) {
 			//this.current_second = -90;
