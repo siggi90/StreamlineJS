@@ -700,6 +700,43 @@ var base = {
 			});
 		}
 	},
+	replace_append: function(html, $container, $last_item) {
+		var id = $(html).attr('id');
+		var $pre = $container.find('#'+id);
+		if($pre.length == 0) {
+			if($last_item == null) {
+				$container.append(html);	
+			} else {
+				$last_item.after(html);	
+			}
+		} else {
+			var focused = false;
+			if($pre.find('textarea').is(':focus') || $pre.find('input').is(':focus')) {
+				focused = true;	
+			}
+			if(!focused) {
+				$pre.after(html);
+				$pre.remove();	
+			}
+		}
+		return $container.find('#'+id);
+	},
+	clear_removed_items: function(items, $container, id_prefix, li_class) {
+		var assoc_data = Array();
+		for(var x in data) {
+			assoc_data[data[x].id] = data[x];			
+		}
+		
+		$container.find('.'+li_class).each(function() {
+			var id = $(this).attr('id');
+			var id_split = id.split(id_prefix);
+			var id_suffix = id_split[1];
+			if(typeof assoc_data[id_suffix] === 'undefined') {
+				$(this).remove();	
+			}
+			
+		});
+	},
 	menu: {
 		interlope: 0,
 		init_menu_items: function() {

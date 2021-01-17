@@ -142,6 +142,11 @@ app.navigation = {
 							$.post(branch.root.actions, post_data, function(data) {
 								if(typeof get_data !== 'undefined') {
 									data.id = get_data.id;
+									for(var x in get_data) {
+										if(typeof data[x] === 'undefined') {
+											data[x] = get_data[x];
+										}
+									}
 								}
 								branch.root.interpretation.render_page(page_object, frame, $frame, callback, data);
 								return false;

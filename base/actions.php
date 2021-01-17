@@ -107,7 +107,6 @@
 			$statement = "";
 			foreach($modules as $module) {
 				$if_statement = "return method_exists(\$app->".$module.", '".$action."');";
-				//echo $if_statement."<br>";
 				if(eval($if_statement)) {
 					$statement = class_method($module, $action, $app, $post_flag);
 				} else {
@@ -139,35 +138,18 @@
 						}
 						if($found) {
 							$item_split = explode("_", $action);
-							//var_dump($item_split);
-							//$item_id = $item_split[0];
-							/*if($item_split[0] == 'get' || $item_split[0] == '') {
-								$item_id = $item_split[1];
-								unset($item_split[1]);	
-							} else {
-								unset($item_split[0]);
-							}*/
 							foreach($item_split as $key => $value) {
 								if($value == "!") {
 									unset($item_split[$key]);
 								}
 							}
-							//var_dump($item_id);
-							/*foreach($app->$module->items as $item) {
-								if($item->item_id == $item_id) {
-									$item_id = $item->item_table;	
-								}
-							}*/
 							if(isset($app->$module->items[$item_id])) {
 								$sub_action = implode("_", $item_split);
-								//var_dump($sub_action);
-								//var_dump($sub_action);
 								if($sub_action == "list") {
 									$sub_action .= "_";	
 								} else if($sub_action == "") {
 									$sub_action = "_";	
 								}
-								//echo "sub_action";
 								if(method_exists($app->$module->items[$item_id], $sub_action)) {
 									$module_value = $module.'->items["'.$item_id.'"]';
 									$statement = class_method($module_value, $sub_action, $app, $post_flag);
@@ -177,10 +159,8 @@
 					}
 				}
 			}
-			//var_dump($statement);
 			return $statement;
 		}
-		//$id = $_POST['id'];
 		
 		if($module != "") {
 			if(substr($action, 0, 1) == '_') {
@@ -212,18 +192,26 @@
 			$split = explode("->", $statement);
 			$module = "";
 			$function;
+			$module_statement;
 			if(count($split) == 3) {
 				$module = $split[1];
 				$function = $split[2];		
-			} else {
+			} else if(count($split) == 2) {
 				$function = $split[1];
+			} else {
+				$function = $split[count($split)-1];
+				unset($split[count($split)-1]);
+				$module = implode("->", $split);
+				$module_statement = "\$current_module = ".$module.";";
 			}
 			$function_split = explode("(", $function);
 			$function = $function_split[0];
 			
 			$accessible = true;
 			$current_module = $app;
-			if($module != "") {
+			if(isset($module_statement)) {
+				eval($module_statement);
+			} else if($module != "") {
 				$current_module = $app->$module;
 			}
 			if(isset($current_module->function_access)) {
