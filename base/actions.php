@@ -118,21 +118,35 @@
 					} else if(isset($app->$module->items)) {
 						$found = false;
 						$item_id = NULL;
-						foreach($app->$module->items as $item) {
+						
+						$items_list = $app->$module->items;
+						//sort items_list by strlen
+						foreach($items_list as $item) {
 							$item_id_value = $item->item_table;
+							$item_id_value_id = $item->item_id;
 							if(!$found) {
 								if(strpos($action, $item_id_value) !== false) {
 									$action = str_replace($item_id_value, "!", $action);
-									$item_id = $item_id_value;
-									$found = true;	
+									if(isset($app->$module->items[$item_id_value])) {
+										$item_id = $item_id_value;
+										$found = true;
+									} else if(isset($app->$module->items[$item_id_value_id])) {
+										$item_id = $item_id_value_id;
+										$found = true;	
+									}
 								}
 							}
-							$item_id_value_id = $item->item_id;
 							if(!$found) {
 								if(strpos($action, $item_id_value_id) !== false) {
 									$action = str_replace($item_id_value_id, "!", $action);
-									$item_id = $item_id_value;
-									$found = true;	
+									$item_id = $item_id_value_id;
+									if(isset($app->$module->items[$item_id_value])) {
+										$item_id = $item_id_value;
+										$found = true;
+									} else if(isset($app->$module->items[$item_id_value_id])) {
+										$item_id = $item_id_value_id;
+										$found = true;	
+									}
 								}
 							}
 						}
@@ -143,7 +157,7 @@
 									unset($item_split[$key]);
 								}
 							}
-							if(isset($app->$module->items[$item_id])) {
+							//if(isset($app->$module->items[$item_id])) {
 								$sub_action = implode("_", $item_split);
 								if($sub_action == "list") {
 									$sub_action .= "_";	
@@ -154,7 +168,7 @@
 									$module_value = $module.'->items["'.$item_id.'"]';
 									$statement = class_method($module_value, $sub_action, $app, $post_flag);
 								}
-							}
+							//}
 						}
 					}
 				}

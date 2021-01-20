@@ -194,15 +194,16 @@ app.navigation = {
 					};
 				}(frame, branch.$parse_render_frame, split[x], get_data));
 				
-			//}
-			/*if(branch.root.interpretation.bottom_frame != branch.root.interpretation.current_render_frame && branch.root.interpretation.bottom_frame !== null && typeof branch.root.interpretation.bottom_frame.__default_page !== 'undefined') {
-				if(last_level_rendered != branch.root.interpretation.bottom_frame.level) {
-					var href = this.hash_value+"/"+branch.root.interpretation.bottom_frame.__default_page;
-					this.set_hash(href);
-				}
-				//alert(branch.root.interpretation.bottom_frame.__default_page);
-			} else {*/
+			//}/* else {*/
 			if(x == split.length-1 || !branch.access_granted) {
+				
+				if(branch.root.interpretation.bottom_frame != branch.root.interpretation.current_render_frame && branch.root.interpretation.bottom_frame !== null && typeof branch.root.interpretation.bottom_frame.__default_page !== 'undefined') {
+					if(last_level_rendered != branch.root.interpretation.bottom_frame.level) {
+						var href = branch.hash_value+"/"+branch.root.interpretation.bottom_frame.__default_page;
+						branch.set_hash(href);
+					}
+					//alert(branch.root.interpretation.bottom_frame.__default_page);
+				}
 				if(branch.access_granted) {
 					branch.root.user_menu.remove_login_overlay();
 				} else {
@@ -268,9 +269,10 @@ app.navigation = {
 					altered_string.push(split[x]);	
 				}
 			}
-			$frame = this.frames.find_frame(altered_level);
-			this.parse_render(altered_string, null, $frame, id, get_data, altered_level);
-			
+			if(altered_level != -1) {
+				$frame = this.frames.find_frame(altered_level);
+				this.parse_render(altered_string, null, $frame, id, get_data, altered_level);
+			}
 			
 			/*if(page.indexOf('#') != -1) {
 				var id_split = page.split('#');
@@ -426,9 +428,13 @@ app.navigation = {
 			$parent = $parent.find('.frame').first();
 			//alert(depth+" - "+$parent.attr('id'));
 			if($parent.length == 0) {
-				var set_hash_value = "#";	
-				location.hash = set_hash_value;
-				window.location.reload();
+				//var set_hash_value = "#";	
+				l//ocation.hash = set_hash_value;
+				//window.location.reload();
+				window.location.hash = '#';
+				/*setTimeout(function() {
+					
+				});*/
 				return;
 				
 				//alert('no frame');	

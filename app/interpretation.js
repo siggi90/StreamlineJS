@@ -842,7 +842,11 @@ app.interpretation = {
 										title = item["title"+suffix];
 									}
 								}
-								$menu_container.append("<div class='menu_button "+item.id+"_button' id='"+item.id+"_button'><a>"+title+"</a></div>");	
+								var icon_i = "";
+								if(typeof item.icon_i !== 'undefined') {
+									icon_i = "<i class='"+item.icon_i+"'></i>";	
+								}
+								$menu_container.append("<div class='menu_button "+item.id+"_button' id='"+item.id+"_button'><a>"+icon_i+title+"</a></div>");	
 							}
 							var content = content_item.content_parsed;
 							var page_send_data = null;
@@ -1076,387 +1080,395 @@ app.interpretation = {
 						$container.append("<div id='"+content_item.id+"_list' class='list'></div>");
 						var $list = $container.find('#'+content_item.id+"_list").first();
 						$content_item_element = $list;
-						//(function($list) {
-							var $search;
-							if(typeof content_item.title !== 'undefined') {
-								$list.append("<div class='title'>"+content_item.title+"</div>");	
-							}
-							var template_selector;
-							var li_template;
-							if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {								
-								template_selector = '#'+content_item.template+'_li_template';
-								li_template = $('#templates > '+template_selector).first()[0].outerHTML;	
-							}
-							var target_frame = content_item.target;
-							var target_frame_object = branch.root.eval_object_path(branch.root.find("elements.frames", target_frame), "this");
-							var target_frame_depth = branch.root.depth(target_frame_object, branch.root.elements.frames, 0) - 1;
-							$list.append("<div class='list_content'></div>");
-							$list.append("<div class='list_load_button'>Load more items</div>");
-							var $list_container = $list;
-							var $list_load_button = $list_container.find('.list_load_button').first();
-							$list = $list.find('.list_content');
-							var image_root = "images";
-							if(typeof content_item.image_location !== 'undefined') {
-								image_root = content_item.image_location;	
-							}
-							var list_operation = {
-								offset: 0,
-								$list: $list,
-								components: Array(),
-								load: function(send_data, search_term) {
-									var self = this;
-									self.components = Array();
-									/*if(typeof no_refresh === 'undefined') {
-									}*/
-									/*if(typeof no_refresh !== 'undefined') {
-										$list = $('.dummy_div').first();	
-									} else {
-										$list = self.$list;	
-									}*/
-									if(typeof search_term === 'undefined') {
-										search_term = '';	
+						var $search;
+						if(typeof content_item.title !== 'undefined') {
+							$list.append("<div class='title'>"+content_item.title+"</div>");	
+						}
+						var template_selector;
+						var li_template;
+						if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {								
+							template_selector = '#'+content_item.template+'_li_template';
+							li_template = $('#templates > '+template_selector).first()[0].outerHTML;	
+						}
+						var target_frame = content_item.target;
+						var target_frame_object = branch.root.eval_object_path(branch.root.find("elements.frames", target_frame), "this");
+						var target_frame_depth = branch.root.depth(target_frame_object, branch.root.elements.frames, 0) - 1;
+						$list.append("<div class='list_content'></div>");
+						$list.append("<div class='list_load_button'>Load more items</div>");
+						var $list_container = $list;
+						var $list_load_button = $list_container.find('.list_load_button').first();
+						$list = $list.find('.list_content');
+						var image_root = "images";
+						if(typeof content_item.image_location !== 'undefined') {
+							image_root = content_item.image_location;	
+						}
+						var list_operation = {
+							offset: 0,
+							$list: $list,
+							components: Array(),
+							send_data: null,
+							load: function(send_data, search_term) {
+								var self = this;
+								self.components = Array();
+								/*if(typeof no_refresh === 'undefined') {
+								}*/
+								/*if(typeof no_refresh !== 'undefined') {
+									$list = $('.dummy_div').first();	
+								} else {
+									$list = self.$list;	
+								}*/
+								if(typeof search_term === 'undefined') {
+									search_term = '';	
+								}
+								var $list_values_container = self.$list;//branch.view.dummy_div.new();	//$('.dummy_div').first();
+								//$list_values_container.html("");	
+								var post_data = {
+									action: content_item.id+"_list",
+									search_term: search_term,
+									offset: self.offset	
+								};
+								if(typeof content_item.default_values !== 'undefined') {
+									for(var x in content_item.default_values) {
+										post_data[x] = content_item.default_values[x];	
 									}
-									var $list_values_container = self.$list;//branch.view.dummy_div.new();	//$('.dummy_div').first();
-									//$list_values_container.html("");	
-									var post_data = {
-										action: content_item.id+"_list",
-										search_term: search_term,
-										offset: self.offset	
-									};
-									if(typeof content_item.default_values !== 'undefined') {
-										for(var x in content_item.default_values) {
-											post_data[x] = content_item.default_values[x];	
+								}
+								if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
+									for(var x in content_item.post_data) {
+										if(typeof page_data[content_item.post_data[x]] !== 'undefined') {
+											var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
+											eval(statement);
+										}
+										/*if(typeof post_data[x] === 'undefined') {
+											post_data[x] = null;	
+										}*/
+									}
+								}
+								if(typeof send_data !== 'undefined') {
+									for(var x in send_data) {
+										var statement = "post_data."+x+" = page_data."+send_data[x];
+										eval(statement);	
+									}
+								}
+								if(typeof post_data.search_field !== 'undefined') {
+									var $search_field = $list.parent().find('.search_bar').find('.search').first();
+									$search_field.val(post_data.search_field);
+									if(content_item.search === true) {
+										post_data.search_term = post_data.search_field;	
+									}
+									delete post_data.search_field;
+								}
+								this.send_data = post_data;
+								$.post(branch.root.actions, post_data, function(data) {
+									self.list_data = data;
+									//self.offset += data.length;
+									var username_target_depth = 1;			
+									if(typeof content_item.content !== 'undefined') {					
+										if(typeof content_item.content.username.target !== 'undefined') {
+											username_target_depth = branch.root.navigation.frames.find_frame_depth(content_item.content.username.target);	
 										}
 									}
-									if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
-										for(var x in content_item.post_data) {
-											if(typeof page_data[content_item.post_data[x]] !== 'undefined') {
-												var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
-												eval(statement);
-											}
-											/*if(typeof post_data[x] === 'undefined') {
-												post_data[x] = null;	
-											}*/
+									$list_values_container.html("");	
+									for(var x in data) {
+										var list_item_href = "";
+										if(typeof content_item.click !== 'undefined') {
+											list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id);
 										}
-									}
-									if(typeof send_data !== 'undefined') {
-										for(var x in send_data) {
-											var statement = "post_data."+x+" = page_data."+send_data[x];
-											eval(statement);	
-										}
-									}
-									if(typeof post_data.search_field !== 'undefined') {
-										var $search_field = $list.parent().find('.search_bar').find('.search').first();
-										$search_field.val(post_data.search_field);
-										if(content_item.search === true) {
-											post_data.search_term = post_data.search_field;	
-										}
-										delete post_data.search_field;
-									}
-									$.post(branch.root.actions, post_data, function(data) {
-										self.list_data = data;
-										//self.offset += data.length;
-										var username_target_depth = 1;			
-										if(typeof content_item.content !== 'undefined') {					
-											if(typeof content_item.content.username.target !== 'undefined') {
-												username_target_depth = branch.root.navigation.frames.find_frame_depth(content_item.content.username.target);	
-											}
-										}
-										$list_values_container.html("");	
-										for(var x in data) {
-											var list_item_href = "";
-											if(typeof content_item.click !== 'undefined') {
-												list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id);
-											}
+										
+										
+										if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {
+											var row_item = li_template;
 											
+											$list_values_container.append(row_item);
 											
-											if(typeof content_item.custom !== 'undefined' && content_item.custom === true) {
-												var row_item = li_template;
-												
-												$list_values_container.append(row_item);
-												
-												var li_id = content_item.id+'_'+data[x].id;
-												$list_values_container.find(template_selector).first().attr('id', li_id);
-												var $li = $list_values_container.find('#'+li_id).first();
-												for(var v in data[x]) {
-													if(v.indexOf('_column_value') == -1) {
-														var li_id_suffix = v;
-														if(typeof content_item.class_mask !== 'undefined') {
-															if(typeof content_item.class_mask[li_id_suffix] !== 'undefined') {
-																li_id_suffix = content_item.class_mask[li_id_suffix];
-															}
+											var li_id = content_item.id+'_'+data[x].id;
+											$list_values_container.find(template_selector).first().attr('id', li_id);
+											var $li = $list_values_container.find('#'+li_id).first();
+											for(var v in data[x]) {
+												if(v.indexOf('_column_value') == -1) {
+													var li_id_suffix = v;
+													if(typeof content_item.class_mask !== 'undefined') {
+														if(typeof content_item.class_mask[li_id_suffix] !== 'undefined') {
+															li_id_suffix = content_item.class_mask[li_id_suffix];
 														}
-														var $column = $li.find('.'+li_id_suffix).first();
-														$column.html(data[x][v]);
-														if(typeof data[x][v+'_column_value'] !== 'undefined') {
-															$column.attr('value', data[x][v+'_column_value']);
-														}
-														
-														if(typeof content_item.columns_click !== 'undefined') {
-															if(typeof content_item.columns_click[v] !== 'undefined') {
-																if(content_item.columns_click[v] == 'click') {
-																	$column.html("<a href='"+list_item_href+"'>"+$column.html()+"</a>");
-																} else {
-																	var click_item = content_item.columns_click[v];
-																	var post_data = {
-																		
-																	};
-																	var click_value = content_item.click;
-																	if(typeof click_item.click !== 'undefined') {
-																		click_value = click_item.click;	
-																	}
-																	if(typeof click_item.post_data !== 'undefined') {
-																		for(var p in click_item.post_data) {
-																			if(click_item.post_data[p] == "value") {
-																				post_data[p] = data[x][v];
-																				if(typeof $column.attr('value') !== 'undefined') {
-																					post_data[p] = $column.attr('value');	
-																				}
-																			} else if(typeof page_data !== 'undefined') {
-																				post_data[p] == page_data[click_Item.post_data[p]];	
+													}
+													var $column = $li.find('.'+li_id_suffix).first();
+													$column.html(data[x][v]);
+													if(typeof data[x][v+'_column_value'] !== 'undefined') {
+														$column.attr('value', data[x][v+'_column_value']);
+													}
+													
+													if(typeof content_item.columns_click !== 'undefined') {
+														if(typeof content_item.columns_click[v] !== 'undefined') {
+															if(content_item.columns_click[v] == 'click') {
+																$column.html("<a href='"+list_item_href+"'>"+$column.html()+"</a>");
+															} else {
+																var click_item = content_item.columns_click[v];
+																var post_data = {
+																	
+																};
+																var click_value = content_item.click;
+																if(typeof click_item.click !== 'undefined') {
+																	click_value = click_item.click;	
+																}
+																if(typeof click_item.post_data !== 'undefined') {
+																	for(var p in click_item.post_data) {
+																		if(click_item.post_data[p] == "value") {
+																			post_data[p] = data[x][v];
+																			if(typeof $column.attr('value') !== 'undefined') {
+																				post_data[p] = $column.attr('value');	
 																			}
+																		} else if(typeof page_data !== 'undefined') {
+																			post_data[p] == page_data[click_Item.post_data[p]];	
 																		}
 																	}
-																	var id = null;
-																	if(typeof post_data.id !== 'undefined') {
-																		id = post_data.id;
-																		delete post_data.id;
-																	}
-																	var column_href = "";
-																	if(click_item.target == 'self') {
-																		column_href = branch.root.navigation.generate_href(click_value, null, id, post_data, frame_id);	
-																	} else {
-																		var target_frame_object_column = branch.root.eval_object_path(branch.root.find("elements.frames", click_item.target), "this");
-																		var target_frame_depth_column = branch.root.depth(target_frame_object_column, branch.root.elements.frames, 0) - 1;
-																		column_href = branch.root.navigation.gernerate_href(click_value, target_frame_depth_column, id, post_data, frame_id);
-																	}
-																	$column.html("<a href='"+column_href+"'>"+$column.html()+"</a>");
 																}
+																var id = null;
+																if(typeof post_data.id !== 'undefined') {
+																	id = post_data.id;
+																	delete post_data.id;
+																}
+																var column_href = "";
+																if(click_item.target == 'self') {
+																	column_href = branch.root.navigation.generate_href(click_value, null, id, post_data, frame_id);	
+																} else {
+																	var target_frame_object_column = branch.root.eval_object_path(branch.root.find("elements.frames", click_item.target), "this");
+																	var target_frame_depth_column = branch.root.depth(target_frame_object_column, branch.root.elements.frames, 0) - 1;
+																	column_href = branch.root.navigation.gernerate_href(click_value, target_frame_depth_column, id, post_data, frame_id);
+																}
+																$column.html("<a href='"+column_href+"'>"+$column.html()+"</a>");
 															}
 														}
 													}
 												}
-											} else {
-												var external_link;
-												if(typeof data[x].external_link !== 'undefined') {
-													external_link = data[x].external_link;
-													delete data[x].external_link;
+											}
+										} else {
+											var external_link;
+											if(typeof data[x].external_link !== 'undefined') {
+												external_link = data[x].external_link;
+												delete data[x].external_link;
+											}
+											var row_item = "<div class='list_item' id='"+data[x].id+"'>";
+											if(typeof data[x].title !== 'undefined') {
+												if(list_item_href != "") {
+													row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
+												} else {
+													row_item += "<div class='title list_element'>"+data[x].title+"</div>";
 												}
-												var row_item = "<div class='list_item' id='"+data[x].id+"'>";
-												if(typeof data[x].title !== 'undefined') {
-													if(list_item_href != "") {
-														row_item += "<div class='title list_element'><a href='"+list_item_href+"'>"+data[x].title+"</a></div>";
-													} else {
-														row_item += "<div class='title list_element'>"+data[x].title+"</div>";
-													}
-													delete data[x].title;
+												delete data[x].title;
+											}
+											if(typeof data[x].image !== 'undefined') {
+												//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
+												if(list_item_href != "") {
+													row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
+												} else {
+													row_item += "<img src='"+image_root+"/"+data[x].image+"' class='max_original_size' />";
 												}
-												if(typeof data[x].image !== 'undefined') {
-													//row_item += "<div class='list_image' style='background-image:url("+image_root+"/"+data[x].image+")'></div>";	
-													if(list_item_href != "") {
-														row_item += "<a href='"+list_item_href+"'><img src='"+image_root+"/"+data[x].image+"' class='max_original_size' /></a>";
-													} else {
-														row_item += "<img src='"+image_root+"/"+data[x].image+"' class='max_original_size' />";
-													}
-													delete data[x].image;
-												}
-												var line_clamp = "";
-												if(typeof content_item.clamp_content !== 'undefined') {
-													line_clamp = "line_clamp";
-												}
-												if(typeof data[x].content !== 'undefined') {
-													row_item += "<div class='content list_element "+line_clamp+"'>"+data[x].content+"</div>";
-													delete data[x].content;
-												}
-												var row_id = data[x].id;
-												delete data[x].id;
-												if(typeof data[x].username !== 'undefined') {
-													var user_href = branch.root.navigation.generate_href("user", username_target_depth, data[x].user_id);
-													row_item += "<div class='username list_element'><a href='"+user_href+"'>"+data[x].username+"</a></div>";
-													delete data[x].username;
-													delete data[x].user_id;
-												}
-												if(typeof data[x].username !== 'undefined') {
-													
-													delete data[x].user_id;
-												}
+												delete data[x].image;
+											}
+											var line_clamp = "";
+											if(typeof content_item.clamp_content !== 'undefined') {
+												line_clamp = "line_clamp";
+											}
+											if(typeof data[x].content !== 'undefined') {
+												row_item += "<div class='content list_element "+line_clamp+"'>"+data[x].content+"</div>";
+												delete data[x].content;
+											}
+											var row_id = data[x].id;
+											delete data[x].id;
+											if(typeof data[x].username !== 'undefined') {
+												var user_href = branch.root.navigation.generate_href("user", username_target_depth, data[x].user_id);
+												row_item += "<div class='username list_element'><a href='"+user_href+"'>"+data[x].username+"</a></div>";
+												delete data[x].username;
+												delete data[x].user_id;
+											}
+											if(typeof data[x].username !== 'undefined') {
 												
-												//row_item += "<div class='list_item_information'>";
-												var li_information_count = 0;
-												for(var y in data[x]) {
-													if(li_information_count > 0) {
-														//row_item += "<div class='list_element column_split'>|</div>";	
-													}
-													
-													var caption = "";
-													var column_title = y;
-													if(typeof content_item.columns !== 'undefined') {
-														if(typeof content_item.columns[y] !== 'undefined') {
-															if(typeof content_item.columns[y] !== 'object') {
-																column_title = content_item.columns[y];	
-															} else {
-																if(typeof branch.root.language !== 'undefined') {
-																	column_title = content_item.columns[y][parseInt(branch.root.language)+1];	
-																}
-															}
-														}
-													}
-													if(column_title != null) {
-														caption = "<div class='caption'>"+column_title+"</div>";
-													}
-													row_item += "<div class='list_element_wrap'>"+caption+"<div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
-													li_information_count++;
-													
-												}
-												/*if(typeof content_item.share_links !== 'undefined') {
-													row_item += '<div class="sharethis-inline-share-buttons"></div>';	
-												}*/
-												row_item += "</div>";//</div>";
-												$list_values_container.append(row_item);
-												var $li = $list_values_container.find('#'+row_id).first();
-												
-												if(typeof external_link !== 'undefined') {
-													//alert(data[x].external_link);
-													$li.wrap("<a href='"+external_link+"'></a>");	
-												}
+												delete data[x].user_id;
 											}
 											
-											if(typeof content_item.components !== 'undefined') {
-												self.components[x] = ({});
-												for(var v in content_item.components) {
-													self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self);
-													self.components[x][v].init();
+											//row_item += "<div class='list_item_information'>";
+											var li_information_count = 0;
+											for(var y in data[x]) {
+												if(li_information_count > 0) {
+													//row_item += "<div class='list_element column_split'>|</div>";	
 												}
-											}
-										}
-										
-										if(typeof content_item.show_all_items === 'undefined' || content_item.show_all_items !== true) {
-											$.post(branch.root.actions, {
-												action: content_item.id+"_list_count"	
-											}, function(data) {
-												if(data <= self.list_data.length) {
-													$list_load_button.hide();	
-												} else {
-													$list_load_button.show();	
-												}
-											});
-										} else {
-											$list_load_button.hide();	
-										}
-										
-										
-										if(typeof content_item.date_columns !== 'undefined') {
-											for(var c in content_item.date_columns) {
-												(function(c) {
-													var date_column_class = content_item.date_columns[c];
-													var popover = true;
-													var time = true;
-													if(typeof date_column_class === 'object') {
-														var date_column_object = date_column_class;
-														date_column_class = date_column_class.class;	
-														if(typeof date_column_object.popover !== 'undefined') {
-															popover = date_column_object.popover;	
-														}
-														if(typeof date_column_object.time !== 'undefined') {
-															time = date_column_object.time;	
+												
+												var caption = "";
+												var column_title = y;
+												if(typeof content_item.columns !== 'undefined') {
+													if(typeof content_item.columns[y] !== 'undefined') {
+														if(typeof content_item.columns[y] !== 'object') {
+															column_title = content_item.columns[y];	
+														} else {
+															if(typeof branch.root.language !== 'undefined') {
+																column_title = content_item.columns[y][parseInt(branch.root.language)+1];	
+															}
 														}
 													}
-													$list_values_container.find('.'+date_column_class).each(function() {
-														if(!$(this).parent().hasClass('table_header')) {
-															var $this = $(this);
-															branch.view.date.date_cell($this, time, popover);
-														}
-													});
-												}(c));
+												}
+												if(column_title != null) {
+													caption = "<div class='caption'>"+column_title+"</div>";
+												}
+												row_item += "<div class='list_element_wrap'>"+caption+"<div class='"+y+" list_element'>"+data[x][y]+"</div></div>";
+												li_information_count++;
+												
+											}
+											/*if(typeof content_item.share_links !== 'undefined') {
+												row_item += '<div class="sharethis-inline-share-buttons"></div>';	
+											}*/
+											row_item += "</div>";//</div>";
+											$list_values_container.append(row_item);
+											var $li = $list_values_container.find('#'+row_id).first();
+											
+											if(typeof external_link !== 'undefined') {
+												//alert(data[x].external_link);
+												$li.wrap("<a href='"+external_link+"'></a>");	
 											}
 										}
 										
-										//branch.view.display_changes(self.$list, $list_values_container);
-										/*$list_values_container.find('.list_item_information').each(function() {				
-											branch.root.interpretation.view.single_row_columns($(this));
-										});*/
-										if(typeof $search_field !== 'undefined') {
-											$search_field.trigger('keyup');
+										if(typeof content_item.components !== 'undefined') {
+											self.components[x] = ({});
+											for(var v in content_item.components) {
+												self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self);
+												self.components[x][v].init();
+											}
 										}
-										branch.loaded_objects[page.id].loaded();
-									}, "json");
-								},
-								scroll_call: function() {
-									var scroll_point = $list.offset().top + $list.height();
-									var scroll_bottom = $(document).scrollTop() + $(window).height();
-									if(scroll_bottom > scroll_point-200) {
-										//alert(scroll_point);
-										this.load(true);	
 									}
-								}
-							};
-							
-							$list_load_button.click(function() {
-								list_operation.offset += branch.list_addition_length;
-								list_operation.load();
-							});
-							var list_object = {
-								id: content_item.id,
-								$element: $list,
-								operation: list_operation	
-							};
-							branch.root.elements.lists[content_item.id+"_list"] = list_object;
-							
-							if(typeof content_item.search !== 'undefined') {
-								$list.parent().prepend("<div class='search_bar'><input type='text' class='search' placeholder='search' /></div>");
-								$search = $list.parent().find('.search_bar').find('.search').first();
-								if(content_item.search != 'filter') {
-									$search.keyup(function(e) {
-										var search_term = $(this).val().toLowerCase().trim();
-										if(search_term != "") {
-											/*$list.find('.list_item').each(function() {
-												if($(this).text().toLowerCase().indexOf(search_term) != -1) {
-													$(this).show();	
-												} else {
-													$(this).hide();	
+									
+									if(typeof content_item.show_all_items === 'undefined' || content_item.show_all_items !== true) {
+										var list_count_post_data = {
+											action: content_item.id+"_list_count"	
+										};
+										if(self.send_data != null) {
+											for(var y in self.send_data) {
+												if(y.indexOf('_id') == y.length-3) {
+													list_count_post_data[y] = self.send_data[y];
 												}
-											});*/							
-											list_operation.load(null, search_term);
-										} else {
-											/*$list.find('.list_item').each(function() {
-												$(this).show();
-											});*/						
-											list_operation.load();
+											}
 										}
-									});
-								} else {
-									$search.keyup(function(e) {
-										var search_term = $(this).val().toLowerCase().trim();
-										if(search_term != "") {
-											$list.find('.list_item').each(function() {
-												if($(this).text().toLowerCase().indexOf(search_term) != -1) {
-													$(this).show();	
-												} else {
-													$(this).hide();	
+										$.post(branch.root.actions, list_count_post_data, function(data) {
+											if(data <= self.list_data.length) {
+												$list_load_button.hide();	
+											} else {
+												$list_load_button.show();	
+											}
+										});
+									} else {
+										$list_load_button.hide();	
+									}
+									
+									
+									if(typeof content_item.date_columns !== 'undefined') {
+										for(var c in content_item.date_columns) {
+											(function(c) {
+												var date_column_class = content_item.date_columns[c];
+												var popover = true;
+												var time = true;
+												if(typeof date_column_class === 'object') {
+													var date_column_object = date_column_class;
+													date_column_class = date_column_class.class;	
+													if(typeof date_column_object.popover !== 'undefined') {
+														popover = date_column_object.popover;	
+													}
+													if(typeof date_column_object.time !== 'undefined') {
+														time = date_column_object.time;	
+													}
 												}
-											});						
-										} else {
-											$list.find('.list_item').each(function() {
-												$(this).show();
-											});				
+												$list_values_container.find('.'+date_column_class).each(function() {
+													if(!$(this).parent().hasClass('table_header')) {
+														var $this = $(this);
+														branch.view.date.date_cell($this, time, popover);
+													}
+												});
+											}(c));
 										}
-									});	
+									}
+									
+									//branch.view.display_changes(self.$list, $list_values_container);
+									/*$list_values_container.find('.list_item_information').each(function() {				
+										branch.root.interpretation.view.single_row_columns($(this));
+									});*/
+									if(typeof $search_field !== 'undefined') {
+										$search_field.trigger('keyup');
+									}
+									branch.loaded_objects[page.id].loaded();
+								}, "json");
+							},
+							scroll_call: function() {
+								var scroll_point = $list.offset().top + $list.height();
+								var scroll_bottom = $(document).scrollTop() + $(window).height();
+								if(scroll_bottom > scroll_point-200) {
+									//alert(scroll_point);
+									this.load(true);	
 								}
 							}
+						};
+						
+						$list_load_button.click(function() {
+							list_operation.offset += branch.list_addition_length;
 							list_operation.load();
-							
-							/*$(window).scroll(function() {
-								//alert($(document).scrollTop());
-								if(content_item.search !== 'undefined') {
-									var search_term = $search.val().toLowerCase().trim();
-									if(search_term == "") {
-										list_operation.scroll_call();	
+						});
+						var list_object = {
+							id: content_item.id,
+							$element: $list,
+							operation: list_operation	
+						};
+						branch.root.elements.lists[content_item.id+"_list"] = list_object;
+						
+						if(typeof content_item.search !== 'undefined') {
+							$list.parent().prepend("<div class='search_bar'><input type='text' class='search' placeholder='search' /></div>");
+							$search = $list.parent().find('.search_bar').find('.search').first();
+							if(content_item.search != 'filter') {
+								$search.keyup(function(e) {
+									var search_term = $(this).val().toLowerCase().trim();
+									if(search_term != "") {
+										/*$list.find('.list_item').each(function() {
+											if($(this).text().toLowerCase().indexOf(search_term) != -1) {
+												$(this).show();	
+											} else {
+												$(this).hide();	
+											}
+										});*/							
+										list_operation.load(null, search_term);
+									} else {
+										/*$list.find('.list_item').each(function() {
+											$(this).show();
+										});*/						
+										list_operation.load();
 									}
-								} else {
-									list_operation.scroll_call();
+								});
+							} else {
+								$search.keyup(function(e) {
+									var search_term = $(this).val().toLowerCase().trim();
+									if(search_term != "") {
+										$list.find('.list_item').each(function() {
+											if($(this).text().toLowerCase().indexOf(search_term) != -1) {
+												$(this).show();	
+											} else {
+												$(this).hide();	
+											}
+										});						
+									} else {
+										$list.find('.list_item').each(function() {
+											$(this).show();
+										});				
+									}
+								});	
+							}
+						}
+						list_operation.load();
+						
+						/*$(window).scroll(function() {
+							//alert($(document).scrollTop());
+							if(content_item.search !== 'undefined') {
+								var search_term = $search.val().toLowerCase().trim();
+								if(search_term == "") {
+									list_operation.scroll_call();	
 								}
-							});*/
-						//}($list));
+							} else {
+								list_operation.scroll_call();
+							}
+						});*/
 						break;
 					case 'table':
 						var is_search_object = false;
@@ -1539,6 +1551,7 @@ app.interpretation = {
 								perist_send_data: null,
 								$list: $list,
 								components: Array(),
+								send_data: null,
 								load: function(send_data, search_string) {
 									var self = this;
 									self.components = Array();
@@ -1571,6 +1584,7 @@ app.interpretation = {
 										}
 										self.persist_send_data = send_data;
 									}
+									self.send_data = post_data;
 									$.post(branch.root.actions, post_data, function(data) {
 										self.list_data = data;
 										$list_values_container.html("");	
@@ -1888,9 +1902,18 @@ app.interpretation = {
 										
 										
 										if(typeof content_item.show_all_items === 'undefined' || content_item.show_all_items !== true) {
-											$.post(branch.root.actions, {
+											var list_count_post_data = {
 												action: content_item.id+"_list_count"	
-											}, function(data) {
+											};
+											if(self.send_data != null) {
+												for(var y in self.send_data) {
+													if(y.indexOf('_id') == y.length-3) {
+														list_count_post_data[y] = self.send_data[y];
+													}
+												}
+											}
+											console.log(list_count_post_data);
+											$.post(branch.root.actions, list_count_post_data, function(data) {
 												if(data <= self.list_data.length) {
 													$list_load_button.hide();	
 												} else {
@@ -2026,12 +2049,21 @@ app.interpretation = {
 												$(this).val("-1").trigger('change');
 											}
 										});
+										$form.find('input[type=checkbox]').each(function() {
+											$(this).prop('checked', false);
+										});
 										if(typeof data !== 'undefined') {
 											for(var x in data) {
 												var $set_element = self.root.$element.find('#'+x);
 												if($set_element.hasClass('rich_text')) {
 													var id = $set_element.attr('id');
 													tinyMCE.get(id).setContent(data[x]);
+												} else if($set_element.hasClass('checkbox')) {
+													if(data[x] == 1) {
+														$set_element.prop('checked', true);	
+													} else {
+														$set_element.prop('checked', false);
+													}
 												} else {
 													$set_element.val(data[x]).trigger('change');	
 												}
@@ -2140,6 +2172,91 @@ app.interpretation = {
 								var $input_extra;
 								(function(form_element, form_object) {
 									switch(form_element.type) {
+										case 'typeahead':
+											$form.append("<div class='form_element typeahead'><input type='hidden' class='hidden form_input optional_field' id='"+form_element.id+"_id' value='-1' /><input type='text' id='"+form_element.id+"' class='form_input'   autocomplete='off' placeholder='"+form_element.placeholder+"' /><div class='suggestions'></div></div>");
+											$input = $form.find('#'+form_element.id).first();
+											var $hidden_id = $input.parent().find('#'+form_element.id+'_id').first();
+											var $suggestions = $input.parent().find('.suggestions').first();
+											var set_value = null;
+											var suggestion_data = Array();
+											$input.on('focusout.suggestions', function(event) {
+												setTimeout(function() {
+													$suggestions.hide();
+												}, 150);
+											});
+											$input.on('keyup.suggestions', function(event) {
+												var $this = $(this);
+												var value = $this.val();
+												if(value != set_value) {
+													$hidden_id.val("-1");
+												}
+												if(event.which == 13) {
+													var suggestion_object = $suggestions.find('.suggestion').first().data("suggestion_object");
+													$hidden_id.val(suggestion_object.id);
+													$input.val(suggestion_object.title);
+													$suggestions.html("").show();
+													return;	
+												}
+												$suggestions.html("").show();
+												//$suggestions.slideDown('fast');
+												for(var y in suggestion_data) {
+													var suggestion_value = suggestion_data[y];
+													(function(suggestion_value) {
+														if(value.toLowerCase() == suggestion_value.title.toLowerCase()) {
+															$hidden_id.val(suggestion_value.id);
+															set_value = suggestion_value.title;
+														} else if(value.trim() != "" && suggestion_value.title.toLowerCase().indexOf(value.toLowerCase().trim()) != -1) {
+															$suggestions.append("<div id='"+suggestion_value.id+"_suggestion' class='suggestion'>"+suggestion_value.title+"</div>");
+															var $suggestion = $suggestions.find('#'+suggestion_value.id+'_suggestion').first();
+															$suggestion.data("suggestion_object", suggestion_value);
+															$suggestion.click(function() {
+																$hidden_id.val(suggestion_value.id);
+																$input.val(suggestion_value.title);
+																set_value = suggestion_value.title;
+																$suggestions.html("");
+																//$suggestions.slideUp('fast');
+															});
+														}
+													}(suggestion_value));
+												}
+											});
+											$.post(branch.root.actions, {
+												'action': form_element.id+'_typeahead'	
+											}, function(data) {
+												suggestion_data = data;
+											}, "json");
+											break;
+										case 'currency':
+											var caption = "";
+											if(typeof form_element.caption !== 'undefined') {
+												caption = "<div class='caption'>"+form_element.caption+"</div>";	
+											}
+											$form.append('<div class="form_element currency">'+caption+'<input id="'+form_element.id+'" placeholder="Amount in '+branch.root.currency+'" class="currency form_input" /></div>');
+											$input = $form.find('#'+form_element.id).first();
+											var input_timeout = null;
+											$input.keypress(function() {
+												var $this = $(this);
+												clearTimeout(input_timeout);
+												input_timeout = setTimeout(function() {
+													var $value = $this.val();
+													var float_value = parseFloat($value);
+													if($value != float_value) {
+														$this.addClass('invalid');	
+													} else {
+														$this.removeClass('invalid');	
+													}
+												}, 50);
+											});
+											break;
+										case 'checkbox':
+											var caption = "";
+											if(typeof form_element.caption !== 'undefined') {
+												caption = "<label for='"+form_element.id+"'>"+form_element.caption+"</label>";	
+												//caption = form_element.caption;
+											}
+											$form.append("<div class='form_element checkbox'><input type='checkbox' id='"+form_element.id+"' class='form_input checkbox' value='' />"+caption+"</div>");
+											$input = $form.find('#'+form_element.id).first();
+											break;
 										case 'year':
 											var caption = "";
 											if(typeof form_element.caption !== 'undefined') {
@@ -2330,10 +2447,18 @@ app.interpretation = {
 															if(typeof form_element.caption !== 'undefined') {
 																option_name = form_element.caption;	
 															}
-															$select.append("<option disabled selected value>Select an "+option_name+"</option>");
+															var print_children = function(children, padding) {
+																for(var x in children) {
+																	var option = "<option style='padding-left:"+padding+"px;' value='"+children[x].id+"'>"+children[x].title+"</option>";
+																	$select.append(option);
+																	print_children(children[x].children, padding+20);	
+																}
+															};
+															$select.append("<option disabled selected value>Select "+option_name+"</option>");
 															for(var x in data) {
 																var option = "<option value='"+data[x].id+"'>"+data[x].title+"</option>";	
 																$select.append(option);
+																print_children(data[x].children, 2);
 															}
 															if(typeof form_element.persist_value !== 'undefined' && form_element.persist_value == true) {
 																//alert(self.last_value);
@@ -2456,7 +2581,7 @@ app.interpretation = {
 											$input = $suggest;
 											break;
 										default:
-											var statement = "branch.root.custom_elements."+form_object.type+".init(form_element, $container, page_data)";
+											var statement = "branch.root.custom_elements."+form_element.type+".init(form_element, $container, page_data)";
 											eval(statement);
 											break;
 									}
@@ -2569,13 +2694,13 @@ app.interpretation = {
 									}
 									$form.find('.form_input').each(function() {
 										//if(this.tagName == 'input' && this.type == 'radio') {
-										if($(this).hasClass('radio_buttons') || $(this).hasClass('rich_text')) {
+										if($(this).hasClass('radio_buttons') || $(this).hasClass('rich_text') || $(this).hasClass('checkbox')) {
 											
 										} else {
 											if($(this).hasClass('invalid')) {
 												valid = false;	
 											}
-											if(($(this).val() == "" || $(this).val() == "-1") && !$(this).hasClass('allow_empty') && !$(this).hasClass('optional_field') && !(id_set && $(this).hasClass('unrequired_on_edit'))) {												
+											if($(this).val() == null || ($(this).val() == "" || $(this).val() == "-1") && !$(this).hasClass('allow_empty') && !$(this).hasClass('optional_field') && !(id_set && $(this).hasClass('unrequired_on_edit'))) {												
 												valid = false;	
 											}
 										}
@@ -2585,7 +2710,16 @@ app.interpretation = {
 										return false;
 									}
 									$form.find('.form_input').each(function() {
-										if(!$(this).hasClass('rich_text') && !$(this).hasClass('pseudo_value') && !$(this).hasClass('ignore_value') && !($(this).hasClass('unrequired_on_edit') && $(this).val() == "")) {
+										if($(this).hasClass('checkbox') && !$(this).hasClass('pseudo_value') && !$(this).hasClass('ignore_value')) {
+											var id = $(this).attr('id');
+											var value = $(this).prop('checked');
+											if(value) {
+												value = 1;	
+											} else {
+												value = 0;	
+											}
+											submit_data[id] = value;
+										} else if(!$(this).hasClass('rich_text') && !$(this).hasClass('pseudo_value') && !$(this).hasClass('ignore_value') && !($(this).hasClass('unrequired_on_edit') && $(this).val() == "")) {
 											var id = $(this).attr('id');
 											/*if(this.tagName.toLowerCase() == 'select') {
 												id += "_id";	
@@ -2606,7 +2740,7 @@ app.interpretation = {
 										}
 									});
 									var $save = $(this);
-									
+									console.log(submit_data);
 									var submit_callback = function(data) {
 										$form.find('#id').first().val(data).trigger('change');
 										if(data == -1) {
@@ -2899,7 +3033,7 @@ app.interpretation = {
 						discussion_object.operation.load();
 						break;
 					default:
-						var statement = "branch.root.custom_elements."+form_object.type+".init(content_item, $container, page_data)";
+						var statement = "branch.root.custom_elements."+content_item.type+".init(content_item, $container, page_data, branch, page)";
 						eval(statement);
 						break;
 					/*case 'tags':
@@ -2948,6 +3082,8 @@ app.interpretation = {
 									type = "page_data";
 								}
 								if(type == 'page_data') {
+									var show = false;
+									var hide = false;
 									if(typeof page_data === 'undefined') {
 										page_data = {};	
 									}
@@ -2955,30 +3091,45 @@ app.interpretation = {
 									eval(statement);
 									if(dependency.value == 'unset') {
 										if(typeof linked_value === 'undefined' || linked_value == "-1") {
-											$content_item_element.show();
+											show = true;
 											if(typeof content_item_object !== 'undefined') {
 												content_item_object.load();	
 											}
 										} else {
-											$content_item_element.hide();	
+											hide = true;
+											//$content_item_element.hide();	
 										}
 									} else if(dependency.value == "set") {
 										if(typeof linked_value !== 'undefined' && linked_value != "-1") {
-											$content_item_element.show();
+											show = true;
 											if(typeof content_item_object !== 'undefined') {
 												content_item_object.load();	
 											}
 										} else {
-											$content_item_element.hide();
+											hide = true;
 										}
 									} else {
 										if(typeof linked_value !== 'undefined' && linked_value == dependency.value) {
-											$content_item_element.show();
+											show = true;
 											if(typeof content_item_object !== 'undefined') {
 												content_item_object.load();	
 											}	
 										} else {
-											$content_item_element.hide();	
+											hide = true;	
+										}
+									}
+									if(show) {
+										if($content_item_element.attr('id').indexOf('table') != -1) {
+											$content_item_element.parent().show();
+										} else {
+											$content_item_element.show();
+										}
+									}
+									if(hide) {
+										if($content_item_element.attr('id').indexOf('table') != -1) {
+											$content_item_element.parent().hide();
+										} else {
+											$content_item_element.hide();
 										}
 									}
 								} else {
@@ -2994,9 +3145,15 @@ app.interpretation = {
 										} else {
 											linked_value = $(this).val();
 										}
+										//alert(dependency.link);
+										//alert(linked_value);
 										if(dependency.value == "set") {
 											if(linked_value != "-1") {
-												$content_item_element.show();
+												if($content_item_element.attr('id').indexOf('table') != -1) {
+													$content_item_element.parent().show();
+												} else {
+													$content_item_element.show();
+												}
 												if(typeof content_item_object !== 'undefined') {
 													content_item_object.load();	
 												}
@@ -3009,7 +3166,12 @@ app.interpretation = {
 											}
 										} else {
 											if(linked_value == dependency.value) {
-												$content_item_element.show();
+												if($content_item_element.attr('id').indexOf('table') != -1) {
+													$content_item_element.parent().show();
+												} else {
+													$content_item_element.show();
+												}
+												//$content_item_element.show();
 												if(typeof content_item_object !== 'undefined') {
 													content_item_object.load();	
 												}	

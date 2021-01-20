@@ -175,7 +175,7 @@ class base {
 			$files = get_included_files();
 		}
 		$classes = array();
-		
+				
 		foreach($files as $file) {
 			$handle = fopen($file, "r");
 			$counter = 0;

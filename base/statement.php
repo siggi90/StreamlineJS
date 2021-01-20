@@ -38,6 +38,11 @@ class statement {
 				return "NOW()";
 				break;*/
 			default:
+				/*if($v == 'true') {
+					
+				} else if($v == 'false') {
+					
+				} else */
 				if((gettype($v) == 'string') && $v != "NOW()" && $v != "NULL") { // && !is_numeric($v) // || (strpos($v, ":") != false) )"
 					if(count($this->value_callback) > 0) {
 						$v = stripcslashes($v);	

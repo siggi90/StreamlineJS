@@ -47,15 +47,26 @@ class item {
 		$this->sql->execute($query);	
 	}
 	
-	function table($search_term=NULL, $offset=0, $item_id=NULL) {
+	function table($search_term=NULL, $offset=0, $item_id=NULL, $post_data=NULL) {
 		$item_id_string = "";
 		if($item_id != NULL && $this->foreign_key != NULL) {
 			$item_id_string = " WHERE ".$this->item_table.".".$this->foreign_key." = ".$item_id;	
 		}
+		if($post_data !== NULL) {
+			foreach($post_data as $key => $value) {
+				if($item_id_string == "") {
+					$item_id_string .= " WHERE ";	
+				} else {
+					$item_id_string .= " AND ";	
+				}
+				$item_id_string .= $this->item_table.".".$key." = ".$value;	
+			}
+		}
 		
+		$columns = $this->sql->table_columns($this->item_table);
+			
 		$query_search = "";
 		if($search_term	!= NULL && $search_term != '') {		
-			$columns = $this->sql->table_columns($this->item_table);
 			if($item_id_string == "") {
 				$query_search .= " WHERE";
 			} else {
@@ -72,10 +83,11 @@ class item {
 				}
 			}
 		}
+		
 		$query_order_table = "";
 		$query_order = "";
 		$order_column = "";
-		$order_end_string = "";
+		$order_end_string = " ORDER BY id DESC ";
 		if($this->ordered) {
 			$query_order_table = ", item_order";
 			if($query_search == "" && $item_id_string == "") {
@@ -92,30 +104,72 @@ class item {
 			//$offset_string = " LIMIT ".$offset.", ".$this->table_limit;
 			$offset_string = " LIMIT ".($offset+$this->table_limit);
 		}
-		$query = "(SELECT ".$this->item_table.".* ".$order_column." FROM ".$this->item_table.$query_order_table.$item_id_string.$query_search.$query_order.")";
+		
+		$user_query = "";
+		if(isset($columns['user_id'])) {
+			if($query_search == "" && $item_id_string == "" && $query_order == "") {
+				$user_query .= " WHERE";
+			} else {
+				$user_query .= " AND";	
+			}
+			$user_query .= " ".$this->item_table.".user_id = ".$this->_class->get_user_id()." ";	
+		}
+		
+		$query = "(SELECT ".$this->item_table.".* ".$order_column." FROM ".$this->item_table.$query_order_table.$item_id_string.$query_search.$query_order.$user_query.")";
 		if($query_order != "") {
 			if($order_column != "") {
 				$order_column = ", -1 as order_value";	
 			}
 			$where_and = " WHERE";
-			if($item_id_string != "") {
+			if($item_id_string != "" || $user_query != "") {
 				$where_and = " AND";	
 			}
-			$query .= " UNION (SELECT ".$this->item_table.".* ".$order_column." FROM ".$this->item_table." ".$item_id_string.$where_and." (SELECT COUNT(*) FROM item_order WHERE item_order.connect_value = '".$this->item_table."' AND item_order.connect_id = ".$this->item_table.".id) = 0)";	
+			$query .= " UNION (SELECT ".$this->item_table.".* ".$order_column." FROM ".$this->item_table." ".$item_id_string.$user_query.$where_and." (SELECT COUNT(*) FROM item_order WHERE item_order.connect_value = '".$this->item_table."' AND item_order.connect_id = ".$this->item_table.".id) = 0)";	
 		}
 		$query .= $order_end_string.$offset_string;
 		//var_dump($query);
 		return $this->sql->get_rows($query, 1);
 	}
 	
-	function list_count() {
-		$query = "SELECT COUNT(*) as count FROM ".$this->item_table;
+	function list_count($item_id=NULL, $post_data=NULL) {
+		$item_id_string = "";
+		if($item_id != NULL && $this->foreign_key != NULL) {
+			$item_id_string = " WHERE ".$this->item_table.".".$this->foreign_key." = ".$item_id;	
+		}
+		if($post_data !== NULL) {
+			foreach($post_data as $key => $value) {
+				if($item_id_string == "") {
+					$item_id_string .= " WHERE ";	
+				} else {
+					$item_id_string .= " AND ";	
+				}
+				$item_id_string .= $this->item_table.".".$key." = ".$value;	
+			}
+		}
+		$user_query = "";
+		$columns = $this->sql->table_columns($this->item_table);
+		if(isset($columns['user_id'])) {
+			if($item_id_string != "") {
+				$user_query = " AND ";	
+			} else {
+				$user_query = " WHERE ";	
+			}
+			$user_query = " user_id = ".$this->_class->get_user_id();
+		}
+		
+		$query = "SELECT COUNT(*) as count FROM ".$this->item_table.$item_id_string.$user_query;
 		return $this->sql->get_row($query, 1)['count'];	
 	}
 	
 	function get_select() {
 		$set_column = NULL;
 		$columns = $this->sql->table_columns($this->item_table);
+		
+		$user_query = "";
+		if(isset($columns['user_id'])) {
+			$user_query = " WHERE ".$this->item_table.".user_id = ".$this->_class->get_user_id();	
+		}
+		
 		foreach($columns as $column) {
 			if($column == "title") {
 				$set_column = "title";
@@ -125,7 +179,7 @@ class item {
 			}
 		}
 		if($set_column != NULL) {
-			$query = "SELECT id, ".$set_column." as title FROM ".$this->item_table." ORDER BY title ASC";
+			$query = "SELECT id, ".$set_column." as title FROM ".$this->item_table.$user_query." ORDER BY title ASC";
 			return $this->sql->get_rows($query, 1);
 		}
 		return array();
