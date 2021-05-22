@@ -33,6 +33,33 @@ app.loading = {
 			}, 500);
 		}
 	},
+	loading_overlay_on_display: false,
+	display_loading_overlay: function() {
+		if(this.loading_overlay_on_display == false) {
+			this.loading_overlay_on_display = true;
+			$('.overlay_black').find('.loading').show();
+			$('.overlay_black').css({
+				'display': 'block',
+				'opacity': 0
+			}).animate({
+				'opacity': 1
+			}, 1250, 'easeInOutQuint', function() {
+
+			});
+		}
+	},
+	hide_loading_overlay: function() {
+		$('.overlay_black').animate({
+			'opacity': 0
+		}, 1250, 'easeInOutQuint', function() {
+			$('.overlay_black').find('.loading').hide();
+			$(this).css({
+				'display': 'none',
+				'opacity': 0
+			});
+			this.loading_overlay_on_display = false;
+		});
+	},
 	completed: function() {
 		var completed = true;
 		for(var x in this.root.loading_completed) {

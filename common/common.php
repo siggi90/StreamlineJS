@@ -24,6 +24,9 @@
             </div>
     	</div>
     </div>
+    <div class='loading' style='display:none;'>
+        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+    </div>
     <div class='login' style='display:none;'>
         <div class='login_elements'>
             <input type='text' id='username' placeholder="Email" />
@@ -83,5 +86,18 @@
         <div class='search_results_frame' id='search_results_frame'>
         	
         </div>
+    </div>
+    <div class='dialog' style='display:none;'>
+    	<div class='message'>Are you sure you want to delete this item?</div>
+        <div class='controls controls_yes'>
+        	<div class='yes_button control_button'>Yes</div>
+            <div class='no_button control_button'>No</div>
+        </div>
+        <div class='controls controls_ok' style='display:none;'>
+            <div class='ok_button control_button'>Ok</div>
+        </div>
+    </div>
+    <div id='dummy_div' style='display:none;'>
+
     </div>
 </div>

@@ -11,6 +11,127 @@ body {
 	font-size:25px;
 }
 
+@font-face {
+	font-family: 'HelveticaNeue-UltraLight';
+	src: url('HelveticaNeue-UltraLight.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+
+	url('myfont.ttf') format('truetype'); Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+}  
+
+.lds-ring {
+	display: inline-block;
+	position: relative;
+	width: 80px;
+	height: 80px;
+}
+.lds-ring div {
+	box-sizing: border-box;
+	display: block;
+	position: absolute;
+	width: 64px;
+	height: 64px;
+	margin: 8px;
+	border: 8px solid #fff;
+	border-radius: 50%;
+	animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+	border-color: #fff transparent transparent transparent;
+}
+.lds-ring div:nth-child(1) {
+	animation-delay: -0.45s;
+}
+.lds-ring div:nth-child(2) {
+	animation-delay: -0.3s;
+}
+.lds-ring div:nth-child(3) {
+	animation-delay: -0.15s;
+}
+@keyframes lds-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+
+
+.dialog {
+	background:rgba(255,255,255,0.15);
+	color:rgba(255,255,255,0.86);	
+	margin:auto;
+	padding:15px;
+	width:400px;
+	top:50%;
+	margin-top:-250px;
+	position:absolute;
+	left:50%;
+	margin-left:-200px;
+}
+
+select option {
+	background:rgba(0,0,0,0.1);
+}
+
+/*select {
+	background:rgba(0,0,0,0.5);
+}*/
+
+.numeric_status {
+	background: rgba(255,255,255,0.05);
+    color: white;
+    padding:15px;
+}
+
+.numeric_status_item {
+	height:auto;
+	overflow:hidden;
+	padding-bottom:7.5px;
+	margin-bottom:7.5px;
+	border-bottom:1px solid rgba(255,255,255,0.1);
+}
+
+.numeric_status_item > div {
+	float:left;
+}
+
+.numeric_status_item .numeric_status_value {
+	float:right;
+}
+
+
+.dialog .controls {
+	height:auto;
+	overflow:hidden;	
+}
+
+.dialog .controls .control_button {
+	float:left;
+	margin:auto;
+	text-align:center;	
+	width:50%;
+}
+
+.dialog .controls .ok_button {
+	width:100%;
+}
+
+::-webkit-input-placeholder {
+    color:#fff;
+}
+
+::-moz-placeholder {
+    color:#fff;
+}
+
+::-ms-placeholder {
+    color:#fff;
+}
+
+::placeholder {
+    color:#fff;
+}
+
+
 div#templates {
 	display:none;	
 }
@@ -21,6 +142,63 @@ div#templates {
 	text-overflow: ellipsis;	
 }
 
+.menu_top i {
+	margin-right:4px;	
+}
+
+.delete_grid_item {
+	position:relative;
+	top:-10px;
+	left:-10px;	
+	color:#db5151;
+	font-size:40px;
+}
+
+.remove_items_main_button {
+	color:rgba(255,255,255,0.85);
+	padding-left:20px;	
+}
+
+.suggestions {
+	color:#ddd;
+	background:rgba(255,255,255,0.08);
+	border-radius:5px;
+	padding:5px;	
+}
+
+.suggestions .suggestion {
+	border-bottom:1px solid rgba(255,255,255,0.09);	
+}
+
+.form .calendar_grid {
+	position:unset;
+	top:unset;
+	left:unset;
+	right:unset;
+	bottom:unset;	
+}
+
+.form .calendar_view {
+	padding-top:20px;	
+}
+
+.form .day_counter {
+	position:unset;
+	top:unset;
+	text-align:center;
+	vertical-align:middle;
+	padding:15%;	
+}
+
+.form .calendar_controls {
+	padding-left: 25px;
+	padding-right: 25px;	
+}
+
+.form .calendar_cell.selected {
+	background:rgba(255,255,255,0.3);	
+}
+
 input, textarea, button {
 	
 	font-family: 'HelveticaNeue-UltraLight', 'Helvetica Neue UltraLight', 'Helvetica Neue', Arial, Helvetica, sans-serif;	
@@ -28,7 +206,12 @@ input, textarea, button {
 }
 
 input[type='checkbox'] {
-	width:auto;	
+	width:auto !important;	
+}
+
+label {
+	padding-left:15px;
+	color:#ddd;
 }
 
 input.dark {
@@ -41,6 +224,14 @@ input.dark {
 
 .small {
 	font-size:25px !important;	
+}
+
+.edit_button {
+	cursor:default;	
+}
+
+.delete_button {
+	cursor:default;	
 }
 
 .option_image {
@@ -206,6 +397,8 @@ button.save.saved {
 
 .table_header {
 	height:25px !important;	
+	border-left:none !important;
+	border-bottom:none !important;
 }
 
 .divRow > .calendar_cell {
@@ -238,6 +431,11 @@ button.save.saved {
 	height:100%;
 	display:table;
     table-layout: fixed;
+}
+
+.frame .divTable {
+	border-left:1px solid rgba(255,255,255,0.1);
+	border-bottom:1px solid rgba(255,255,255,0.1);	
 }
 
 .divRow {
@@ -562,7 +760,7 @@ button {
 
 .menu_top_container {
 	padding:0px !important;
-	margin-bottom:10px !important;*
+	margin-bottom:10px !important;
 }
 
 .suggestion_results {
@@ -578,7 +776,7 @@ button {
 }
 
 .table_column_image {
-	background-size: 60%;
+	background-size: auto 100%;
 	background-repeat: no-repeat;
 	background-position-x: 10px;
 	background-position-y: 2px;	
@@ -749,12 +947,31 @@ button {
 
 .table .table_column {
 	display:table-cell;
-	/*overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;*/
 	padding:10px;
 	border-left: 1px solid rgba(255,255,255,0.1);
 	border-bottom: 1px solid rgba(255,255,255,0.1);	
+}
+
+.table_column.truncate {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;	
+}
+
+
+@media (max-aspect-ratio: 5/6) {	
+	.table_column.truncate {
+		overflow:none;	
+		white-space: unset;
+	}
+}
+
+.calendar_controls {
+		
+}
+
+.calendar_controls select {
+	width:50%;	
 }
 
 .table .table_row {
@@ -779,7 +996,8 @@ button {
 }
 
 .blur {
-	filter:blur(15px);	
+	filter:blur(15px);
+	transition: all 1.2s linear;	
 }
 
 .small_blur {
@@ -1105,6 +1323,56 @@ body.night {
 	overflow:auto;
 }
 
+.large_icon {
+	font-size:96px;	
+}
+
+.height_auto {
+	height:auto;
+	overflow:hidden;	
+}
+
+.developer_overlay {
+	position:fixed;
+	top:0px;
+	left:0px;
+	right:0px;
+	bottom:0px;
+	background:rgba(255,255,255,0.12);	
+}
+
+.add_form_element {
+	padding:20px;
+	text-align:center;	
+}
+
+._developer_add_button {
+	color:#fff;
+	text-align:center;
+	margin-left:auto;
+	margin-right:auto;
+	display:block;
+	padding:15px;
+	font-size:46px;	
+}
+
+.page_definition {
+	min-height:300px;
+	font-family:monospace;
+	font-size:14px !important;	
+}
+
+@media (max-aspect-ratio: 5/6) {	
+	.image_grid_row {
+		display:grid !important;	
+	}	
+}
+
+.grid_item_title {
+	text-overflow:ellipsis; 
+	overflow:hidden; 
+	white-space: nowrap;	
+}
 
 .user_options {
 	height: 200px;
@@ -1128,6 +1396,7 @@ body.night {
 .form_element > .form_input {
 	width:100%;
 	margin-left:-5px;	
+	box-sizing:content-box;
 }
 
 .form_element_caption {
@@ -1375,9 +1644,19 @@ body.night {
 }
 
 .loading {
-	background: linear-gradient(to right, rgba(255,255,255,0.00) , rgba(255,255,255,0.4), rgba(255,255,255,0.00));		
+	/*background: linear-gradient(to right, rgba(255,255,255,0.00) , rgba(255,255,255,0.4), rgba(255,255,255,0.00));		
 	background-size: 400% 400%;			
-	animation: loading_animation 30s ease infinite;
+	animation: loading_animation 30s ease infinite;*/
+	margin-left: auto;
+	margin-right: auto;
+	display: table;
+	margin-top: auto;
+	margin-bottom: auto;
+	vertical-align: baseline;
+	align-content: baseline;
+	top: 50%;
+	position: relative;
+	margin-top: -150px;
 }
 
 

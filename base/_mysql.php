@@ -162,12 +162,8 @@ class mysql {
 				}
 				$schema_query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '".$db."' AND TABLE_NAME = '".$table."'";
 				$rows = $this->get_rows($schema_query, 1, NULL, true);
-				$has_id = false;
 				foreach($rows as $column) {
-					if($column["COLUMN_NAME"] == "id") {
-						$has_id = true;	
-					}
-					if($column['COLUMN_NAME'] == "user_id" && $has_id) {
+					if($column['COLUMN_NAME'] == "user_id") {
 						if($select_values != "") {
 							$select_values .= ", ";	
 						}
@@ -228,7 +224,7 @@ class mysql {
 		"cloud."
 	);
 	
-	function execute($query=NULL, $connection=NULL, $override=false) {
+	function execute($query=NULL, $connection=NULL, $override=true) {
 		if($this->database_prefix != NULL) {
 			$db_replace = array();
 			foreach($this->db_replace_search as $db_value) {
@@ -248,9 +244,9 @@ class mysql {
 			$query = implode("'", $quote_split);
 		}
 		$split = explode(' ', trim($query));
-		if($connection === NULL) { 
+		if($connection === NULL) { // && ($split[0] == "INSERT" || $split[0] == "UPDATE" || $split[0] == "DELETE")
 			$user_verified = true;
-			if(!$override) {
+			if(!$override) { //&& ($split[0] == "UPDATE" || $split[0] == "DELETE")
 				$user_verified = $this->verify_user($query);
 			}
 			if($user_verified) {
@@ -270,7 +266,7 @@ class mysql {
 	}
 	
 	
-	public function get_rows($query, $result_type=NULL, $connection=NULL, $override=false) {
+	public function get_rows($query, $result_type=NULL, $connection=NULL, $override=true) {
 		if($result_type == NULL) {
 			$result_type = MYSQLI_BOTH;	
 		} else if($result_type == 0) {
@@ -287,14 +283,11 @@ class mysql {
 			}
 			$key++;	
 		}
-		/*if($this->row_verification !== NULL && count($this->row_verification) != $key) {
-			return $this->get_rows($query, $result_type, $connection, $override);	
-		}*/
 		$this->row_verification = NULL;
 		return $return;	
 	}
 	
-	public function get_row($query, $result_type=NULL, $connection=NULL, $override=false) {
+	public function get_row($query, $result_type=NULL, $connection=NULL, $override=true) {
 		$rows = $this->get_rows($query, $result_type, $connection, $override);
 		if(count($rows) > 0) {
 			return $rows[0];	
@@ -318,15 +311,6 @@ class mysql {
 			}
 		}
 		return mysqli_insert_id($this->connection);	
-	}
-	
-	function table_columns($table) {
-		$query = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '".$this->db."' AND TABLE_NAME = '".$table."'";
-		$columns = array();
-		foreach($this->get_rows($query) as $row) {
-			$columns[$row['COLUMN_NAME']] = $row['COLUMN_NAME'];
-		}
-		return $columns;
 	}
 	
 	function close() {

@@ -7,6 +7,27 @@ app.interpretation = {
 	traverse: function(definition_element) {
 		
 	},
+	on_load: function(content_item) {
+		var branch = this;
+		for(var x in content_item.on_load) {
+			var callback_item_reference = content_item.on_load[x];
+			var callback_object = branch.root.elements.find_element_object(callback_item_reference);
+			var send_data = {
+				//id: data.id	
+			};
+			if(typeof content_item.on_load_load_mask !== 'undefined') {
+				for(var x in content_item.on_load_load_mask) {
+					if(x.indexOf("'") !== -1) {
+						x = x.split("'").join('');
+						send_data[content_item.on_load_load_mask[x]] = x;	
+					} else {
+						send_data[content_item.on_load_load_mask[x]] = data[x];
+					}
+				}
+			}
+			callback_object.operation.load(send_data, null, true);
+		}
+	},
 	call_on_submit: function(on_submit, send_data) {
 		var branch = this;
 		for(var x in on_submit) {
@@ -22,6 +43,10 @@ app.interpretation = {
 			}
 		}	
 	},
+	illegal_characters: Array(
+		"'",
+		'"',
+	),
 	loaded_objects: Array(),
 	loaded_object: {
 		new: function() {
@@ -121,7 +146,9 @@ app.interpretation = {
 									'opacity': 0
 								}).animate({
 									'opacity': 1
-								}, 1250, 'easeInOutExpo');
+								}, 1250, 'easeInOutExpo', function() {
+								});
+								$(".body_container").animate({ scrollTop: '0px' }, 1250, 'easeInOutQuad');	
 								break;
 							case 'unset_overlay':
 								//branch.$container.show();
@@ -169,6 +196,25 @@ app.interpretation = {
 	animation: false,
 	bottom_frame: null,
 	list_addition_length: 10,
+	/*render_page: function(page, frame, $frame, callback, page_data, animation) {
+		var branch = this;
+		if(page.developer_mode) {
+			$.post(branch.root.actions, {
+				'action': 'get_page_extension',
+				'module': 'developer',
+				'page': page.id
+			}, function(data) {
+				var parsed = data.extension;
+				parsed = JSON.parse(parsed);
+				parsed = JSON.parse(parsed);
+				
+				//console.log(parsed);
+				branch.sub_render_page(parsed, frame, $frame, callback, page_data, animation);
+			}, "json");
+		} else {
+			this.sub_render_page(page, frame, $frame, callback, page_data, animation);	
+		}
+	},*/
 	render_page: function(page, frame, $frame, callback, page_data, animation) {
 		var branch = this;
 		var animation = false;
@@ -180,8 +226,15 @@ app.interpretation = {
 				document.title = page.title;
 			}
 		}
-		console.log('page_data');
-		console.log(page_data);
+		if(typeof page.use_rtc !== 'undefined') {
+			if(page.use_rtc) {
+				branch.root.use_rtc = true;
+			} else {
+				branch.root.use_rtc = false;
+			}
+		}
+		//console.log('page_data');
+		//console.log(page_data);
 		this.loaded_callbacks = Array();
 		//var animation_click_page = null;
 		if(this.current_page !== null) {
@@ -205,7 +258,7 @@ app.interpretation = {
 				} else {
 					document.title = page_data.title;	
 				}
-				page.title = page_data.title;
+				//page.title = page_data.title;
 			}
 		}
 		if(typeof page_data == 'undefined') {
@@ -249,6 +302,7 @@ app.interpretation = {
 				$container = $('.body_wrap #'+frame+'_frame');	
 			}
 		}
+		page.frame_id = frame_id;
 		this.bottom_frame = this.current_render_frame;
 		var class_value = "";
 		if(typeof page.class !== 'undefined') {
@@ -282,9 +336,17 @@ app.interpretation = {
 				has_self_as_child = true;	
 			}
 		});
+		if(animation == 'overlay') {
+			//branch.elements_store = {};
+			//branch.root.functions.copy_object(branch.elements_store, branch.elements);	
+			//$.extend(true, branch.elements_store, branch.elements)
+			//branch.root.elements.store_elements();
+		}
 		if(animation == 'unset_overlay' && !has_self_as_child) {
 			animation = false;	
 			branch.animation = false;
+			//branch.elements = branch.elements_store;
+			//branch.elements_store = null;
 		}
 		if(animation != 'unset_overlay') {
 			unset_overlay_dismissed = true;
@@ -334,6 +396,8 @@ app.interpretation = {
 				animation = false;			
 				branch.animation = false;	
 			}*/
+		} else {
+			//branch.root.elements.restore_elements();	
 		}
 		$container = $container.find('#'+page.id);
 		branch.$container = $container;
@@ -341,6 +405,12 @@ app.interpretation = {
 		this.loaded_object.render_completed_count = page.content.length;
 		this.loaded_object.new();
 		var content = page.content;
+		
+		if(page.developer_mode) {
+			branch.loaded_objects[page.id].loaded_callbacks.push(function() {
+				branch.root.developer.init($container, page);
+			});
+		}
 		//var $element;
 		//alert(animation);
 		if(animation == 'unset_overlay') {
@@ -399,6 +469,13 @@ app.interpretation = {
 			
 			var content_item_object;
 			(function(content_item){
+				var content_item_id_singular = content_item.id;
+				//if(ontent_item.id.substr(content_item.id.length-1, content_item.id.length) == 's') {
+				content_item_id_singular = content_item.id.substr(0, content_item.id.length-1);
+				//}
+				if(typeof content_item.id_singular !== 'undefined') {
+					content_item_id_singular = content_item.id_singular;	
+				}
 				var $content_item_element;
 				var style_requirment = "";
 				if(content_item.requirement_callback !== 'undefined') {
@@ -442,7 +519,7 @@ app.interpretation = {
 							$(this).hide();
 							var $this = $(this);
 							$function_button.find('.loading_spinner').show();
-							$.post(branch.root.actions, {
+							branch.root.post(branch.root.actions, {
 								'action': content_item.action
 							}, function(data) {
 								setTimeout(function() {							
@@ -462,7 +539,7 @@ app.interpretation = {
 						var $status_element = $container.find('#'+content_item.id).first();
 						var status_object = {
 							load: function() {
-								$.post(branch.root.actions, {
+								branch.root.post(branch.root.actions, {
 									'action': content_item.id+"_status"
 								}, function(data) {
 									if(data == 1) {
@@ -551,7 +628,7 @@ app.interpretation = {
 						}
 						var $options = $container.find('#'+content_item.id+'_options').first();
 						if(content_item.content == 'fetch') {
-							$.post(branch.root.actions, {
+							branch.root.post(branch.root.actions, {
 								'action': content_item.id+'_options'
 							}, function(data) {
 								for(var i in data) {
@@ -594,69 +671,141 @@ app.interpretation = {
 						}
 						$container.append('<form action="'+action+'" id="'+content_item.id+'_file_upload" class="dropzone dropzone_'+content_item.id+'"></form>');
 						//Dropzone.discover();
-						var _dropzone = new Dropzone(".dropzone_"+content_item.id);
+						var _dropzone = new Dropzone(".dropzone_"+content_item.id+"#"+content_item.id+'_file_upload');
 						$upload_form = $container.find('#'+content_item.id+'_file_upload').first();
 						var upload_object = {
+							rtc_upload_count: 0,
 							load: function() {
 								_dropzone.removeAllFiles(true);	
 							}
 						};
-						var post_data = {};
-						if(typeof content_item.submit_mask !== 'undefined') {
-							for(var i in content_item.submit_mask) {
-								var item = content_item.submit_mask[i];
-								if(item.indexOf("'") !== -1) {
-									post_data[i] = item.split("'").join('');
-								} else if(item.indexOf('.') !== -1) {
-									var item_split = item.split(".");
-									var item_object = item_split[0];
-									var item_property = item_split[1];	
-									var target_object = branch.root.elements.find_element_object(item_object);
-									var $target_element = target_object.$element.find('#'+item_property);
-									
-									$target_element.change(function() {
-										for(var y in content_item.submit_mask) {
-											var item = content_item.submit_mask[y];
-											if(item.indexOf('.') !== -1) {
+						(function(){
+							var post_data = {};
+							if(typeof content_item.submit_mask !== 'undefined') {
+
+								if(branch.root.use_rtc) {
+									_dropzone.on('addedfile', function(file) {
+										if(file.size > 20000000) {
+											branch.dialog.init("Maximum filesize exceeded.", undefined, undefined, function() {
+
+											});
+											branch.dialog.show();
+											return;
+										}
+										upload_object.rtc_upload_count++;
+										branch.root.loading.display_loading_overlay();
+										post_data.action = '_'+content_item.rtc_send_id;
+										for(var i in content_item.submit_mask) {
+											var item = content_item.submit_mask[i];
+											if(item.indexOf("'") !== -1) {
+												post_data[i] = item.split("'").join('');
+											} else if(item.indexOf('.') !== -1) {
 												var item_split = item.split(".");
 												var item_object = item_split[0];
 												var item_property = item_split[1];	
 												var target_object = branch.root.elements.find_element_object(item_object);
-												var $target_element = target_object.$element.find('#'+item_property);															
+												var $target_element = target_object.$element.find('#'+item_property);
+																							
 												var value = $target_element.val();
-												post_data[y] = value;
+												post_data[i] = value;
+											} else {
+												post_data[i] = page_data[item];	
 											}
 										}
-										var action_string = action;
-										for(var i in post_data) {
-											action_string += "&"+i+"="+post_data[i];	
+										var filename_split = file.name;
+										var last_index = filename_split.lastIndexOf('.');
+										var extension = filename_split.substr(last_index, filename_split.length);
+										filename_split = filename_split.substr(0, last_index);
+										post_data.filename = filename_split;
+										post_data.extension = extension;
+
+										reader = new FileReader();
+							            reader.onload = handleReaderLoad;
+							            reader.readAsDataURL(file);
+							            function handleReaderLoad(evt) {
+							            	post_data.file_value = evt.target.result;
+							            	//console.log('file_value: ');
+							            	//console.log(post_data.file_value);
+											branch.root.post(branch.root.actions, post_data, function(data) {
+												upload_object.rtc_upload_count--;
+												var send_post_data = {};
+												if(typeof content_item.on_submit_load_mask !== 'undefined') {
+													branch.apply_load_mask(send_post_data, content_item.on_submit_load_mask, page_data);
+												}
+												
+												branch.call_on_submit(content_item.on_submit, send_post_data);
+												if(upload_object.rtc_upload_count == 0) {
+													branch.root.loading.hide_loading_overlay();
+												}
+											});
 										}
-										$upload_form.attr('action', action_string);
-										_dropzone.options.url = action_string;
 									});
-									
-									var value = $target_element.val();
-									post_data[i] = value;
 								} else {
-									post_data[i] = page_data[item];	
+									for(var i in content_item.submit_mask) {
+										var item = content_item.submit_mask[i];
+										if(item.indexOf("'") !== -1) {
+											post_data[i] = item.split("'").join('');
+										} else if(item.indexOf('.') !== -1) {
+											var item_split = item.split(".");
+											var item_object = item_split[0];
+											var item_property = item_split[1];	
+											var target_object = branch.root.elements.find_element_object(item_object);
+											var $target_element = target_object.$element.find('#'+item_property);
+											
+											$target_element.change(function() {
+												for(var y in content_item.submit_mask) {
+													var item = content_item.submit_mask[y];
+													if(item.indexOf('.') !== -1) {
+														var item_split = item.split(".");
+														var item_object = item_split[0];
+														var item_property = item_split[1];	
+														var target_object = branch.root.elements.find_element_object(item_object);
+														var $target_element = target_object.$element.find('#'+item_property);															
+														var value = $target_element.val();
+														post_data[y] = value;
+													}
+												}
+												var action_string = action;
+												for(var i in post_data) {
+													action_string += "&"+i+"="+post_data[i];	
+												}
+												$upload_form.attr('action', action_string);
+												_dropzone.options.url = action_string;
+											});
+											
+											var value = $target_element.val();
+											post_data[i] = value;
+										} else {
+											post_data[i] = page_data[item];	
+										}
+									}
+									var action_string = action;
+									for(var i in post_data) {
+										action_string += "&"+i+"="+post_data[i];	
+									}
+									$upload_form.attr('action', action_string);
+									_dropzone.options.url = action_string;
+									
+									content_item_object = upload_object;
 								}
 							}
-							var action_string = action;
-							for(var i in post_data) {
-								action_string += "&"+i+"="+post_data[i];	
+							if(typeof content_item.on_submit !== 'undefined') {
+								if(branch.root.use_rtc) {
+
+								} else {
+									_dropzone.on("queuecomplete", function(file) {
+										var send_post_data = {};
+										if(typeof content_item.on_submit_load_mask !== 'undefined') {
+											branch.apply_load_mask(send_post_data, content_item.on_submit_load_mask, page_data);
+										}
+										
+										branch.call_on_submit(content_item.on_submit, send_post_data);
+									});
+								}
 							}
-							$upload_form.attr('action', action_string);
-							_dropzone.options.url = action_string;
-							
-							content_item_object = upload_object;
-						}
-						if(typeof content_item.on_submit !== 'undefined') {
-							_dropzone.on("queuecomplete", function(file) {
-								branch.call_on_submit(content_item.on_submit, post_data);
-							});
-						}
-						$content_item_element = $upload_form;
-						branch.loaded_objects[page.id].loaded();
+							$content_item_element = $upload_form;
+							branch.loaded_objects[page.id].loaded();
+						})()
 						break;
 					case "carousel":
 						$container.append("<div class='carousel_wrap'><div class='carousel "+content_item.id+"_carousel' style='height:"+content_item.height+";' id='"+content_item.id+"_carousel'></div><div class='"+content_item.id+"_carousel_bulbs carousel_bulbs'></div></div>");
@@ -665,7 +814,7 @@ app.interpretation = {
 						var carousel_object = {
 							load: function() {
 								var self = this;
-								$.post(branch.root.actions, {
+								branch.root.post(branch.root.actions, {
 									action: content_item.id+"_carousel"	
 								}, function(data) {
 									for(var i in data) {
@@ -909,7 +1058,7 @@ app.interpretation = {
 								}
 							}
 							console.log(post_data);
-							$.post(branch.root.actions, post_data, function(data) {
+							branch.root.post(branch.root.actions, post_data, function(data) {
 								content_item.content = data.pages;
 								if(typeof data.order !== 'undefined') {
 									content_item.order = data.order;
@@ -939,8 +1088,14 @@ app.interpretation = {
 					case 'grid':
 						$container.append("<div id='"+content_item.id+"_grid' class='grid'></div>");
 						var $grid = $container.find('#'+content_item.id+"_grid").first();
-						$content_item_element = $list;
-						
+						$content_item_element = $grid;
+						/*if(typeof content_item.title !== 'undefined') {
+							var remove_items_button = "";
+							if(typeof content_item.remove_items !== 'undefined') {
+								remove_items_button += "<span style='margin-left:15px; font-size:16px;'>Remove items <i class='icofont-delete'></i></span>";	
+							}
+							$grid.append("<div class='title'>"+content_item.title+remove_items_button+"</div>");	
+						}*/
 						var grid_operation = {
 							offset: 0,
 							$grid: $grid,
@@ -995,10 +1150,23 @@ app.interpretation = {
 									}
 									delete post_data.search_field;
 								}*/
-								$.post(branch.root.actions, post_data, function(data) {
+								branch.root.post(branch.root.actions, post_data, function(data) {
 									var $grid_template = $('#templates > #'+content_item.id+'_grid_template').first();
 									var grid_template = $grid_template[0].outerHTML;
 									$grid.html(grid_template);
+									if(typeof content_item.remove_items !== 'undefined') {
+										$grid.prepend("<div class='remove_items_main_button'>Remove items <i class='icofont-delete'></i></div>");	
+										var toggle_grid_remove_items = false;
+										$grid.find('.remove_items_main_button').click(function() {
+											if(!toggle_grid_remove_items) {
+												$grid.find('.delete_grid_item').show();
+												toggle_grid_remove_items = true;
+											} else {
+												$grid.find('.delete_grid_item').hide();
+												toggle_grid_remove_items = false;	
+											}
+										});
+									}
 									var column_template = $grid_template.find('#grid_column_template').first()[0].outerHTML;
 									//var column_template = $(column_template).find('#grid_column_template').html("")[0].outerHTML;
 									var row_template = $grid_template.find('#grid_row_template').first()[0].outerHTML;
@@ -1014,6 +1182,16 @@ app.interpretation = {
 									if(typeof content_item.image_location !== 'undefined') {
 										image_directory = content_item.image_location;	
 									}
+									
+									var click_get_data = null;
+									if(typeof content_item.click_get_data !== 'undefined') {
+										click_get_data = {};
+										for(var d in content_item.click_get_data) {											
+											if(typeof page_data[d] !== 'undefined') {
+												click_get_data[content_item.click_get_data[d]] = page_data[d];	
+											}
+										}
+									}
 									//var width_set = null;
 									while(item_index < data.length) {
 										var column_count = 0;
@@ -1028,14 +1206,61 @@ app.interpretation = {
 											$row.append(column_template);
 											$column = $row.find('#grid_column_template').first();
 											$column.attr('id', data[item_index].id);
-											
-											$column.append("<img src='"+image_directory+"/"+data[item_index].image+"' />");
+											if(typeof data[item_index].image !== 'undefined') {
+												$column.append("<img src='"+image_directory+"/"+data[item_index].image+"' />");
+												if(typeof content_item.image_max_size !== 'undefined') {
+													$column.find('img').first().css('max-width', content_item.image_max_size);
+												}
+											}
+											if(typeof data[item_index].icon !== 'undefined') {		
+												$column.append("<i class='"+data[item_index].icon+" large_icon' />");
+											}
 											if(typeof data[item_index].title !== 'undefined') {
-												$column.append("<br>"+data[item_index].title);	
+												$column.append("<br><span class='grid_item_title' style=''>"+data[item_index].title+"</span>");	//display:none;
 											}
 											
 											$column.children().wrap("<a></a>");
-											$column.find('a').attr('href', branch.root.navigation.generate_href(content_item.click, null, data[item_index].id, null, content_item.target_frame))
+																				
+											if(typeof content_item.remove_items !== 'undefined') {
+												$column.prepend("<i class='icofont-delete delete_grid_item' style='display:none;'></i>");
+											}
+											if(typeof content_item.click !== 'undefined') {
+												$column.find('a').attr('href', branch.root.navigation.generate_href(content_item.click, null, data[item_index].id, click_get_data, content_item.target_frame));
+											} else if(data[item_index].href !== 'undefined') {
+												$column.find('a').attr('href', data[item_index].href);
+											}
+											
+											if(typeof content_item.remove_items !== 'undefined') {
+												(function(item_id) {
+													$column.find('.delete_grid_item').click(function() {
+														var post_data = {
+															action: 'delete_'+content_item_id_singular
+														};
+														post_data.id = item_id;
+														
+														branch.root.post(branch.root.actions, post_data, function(data) {
+															self.load();
+														});
+													});
+												}(data[item_index].id));
+											}
+											/*if(typeof content_item.remove_items !== 'undefined') {
+												var hover_timeout = null;
+												$column.mouseover(function() {
+													var $this = $(this);
+													clearTimeout(hover_timeout);
+													hover_timeout = setTimeout(function() {
+														$this.find('.delete_grid_item').show();
+													}, 2250);
+												});
+												$column.find('.delete_grid_item').mouseout(function() {
+													$this = $(this);
+													setTimeout(function() {
+														clearTimeout(hover_timeout);
+														$this.hide();
+													}, 1250);
+												});
+											}*/
 											/*.click(function() {
 												branch.animation = content_item.animation;
 												alert(branch.animation);
@@ -1057,13 +1282,17 @@ app.interpretation = {
 											item_index++;
 										}
 									}
+									/*setTimeout(function() {
+										$grid_container.find('.grid_item_title').fadeIn('fast');
+									}, 2250);*/
 									$grid_container.css({
 										'width': '5%',
 										'opacity': 0
 									}).animate({
 										'width': '100%',
 										'opacity': 1
-									}, 3500, 'easeInOutQuint');
+									}, 3500, 'easeInOutQuint', function() {
+									});
 									branch.loaded_objects[page.id].loaded();
 								}, "json");
 							}
@@ -1073,7 +1302,7 @@ app.interpretation = {
 							$element: $list,
 							operation: grid_operation	
 						};
-						branch.root.elements.lists[content_item.id+"_grid"] = grid_object;
+						branch.root.elements.grids[content_item.id+"_grid"] = grid_object;
 						grid_object.operation.load();
 						break;
 					case 'list':
@@ -1132,17 +1361,15 @@ app.interpretation = {
 										post_data[x] = content_item.default_values[x];	
 									}
 								}
-								if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
+								/*if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
 									for(var x in content_item.post_data) {
 										if(typeof page_data[content_item.post_data[x]] !== 'undefined') {
 											var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
 											eval(statement);
 										}
-										/*if(typeof post_data[x] === 'undefined') {
-											post_data[x] = null;	
-										}*/
 									}
-								}
+								}*/
+								branch.apply_load_mask(post_data, content_item.post_data, page_data);
 								if(typeof send_data !== 'undefined') {
 									for(var x in send_data) {
 										var statement = "post_data."+x+" = page_data."+send_data[x];
@@ -1158,7 +1385,7 @@ app.interpretation = {
 									delete post_data.search_field;
 								}
 								this.send_data = post_data;
-								$.post(branch.root.actions, post_data, function(data) {
+								branch.root.post(branch.root.actions, post_data, function(data) {
 									self.list_data = data;
 									//self.offset += data.length;
 									var username_target_depth = 1;			
@@ -1172,6 +1399,9 @@ app.interpretation = {
 										var list_item_href = "";
 										if(typeof content_item.click !== 'undefined') {
 											list_item_href = branch.root.navigation.generate_href(content_item.click, target_frame_depth, data[x].id);
+										} else if(typeof content_item.custom_href !== 'undefined') {
+											list_item_href = data[x].custom_href;
+											delete data[x].custom_href;
 										}
 										
 										
@@ -1329,7 +1559,7 @@ app.interpretation = {
 										if(typeof content_item.components !== 'undefined') {
 											self.components[x] = ({});
 											for(var v in content_item.components) {
-												self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self);
+												self.components[x][v] = branch.root.components[content_item.components[v].type].new($li.find('.'+v).first(), data[x].id, content_item.id, self, content_item.components[v], page);
 												self.components[x][v].init();
 											}
 										}
@@ -1346,7 +1576,7 @@ app.interpretation = {
 												}
 											}
 										}
-										$.post(branch.root.actions, list_count_post_data, function(data) {
+										branch.root.post(branch.root.actions, list_count_post_data, function(data) {
 											if(data <= self.list_data.length) {
 												$list_load_button.hide();	
 											} else {
@@ -1511,19 +1741,23 @@ app.interpretation = {
 										
 								}
 							}*/
-							var content_item_id_singular = content_item.id.substr(0, content_item.id.length-1);
 							var form_object;
 							if(typeof content_item.target !== 'undefined') {
 								form_object = branch.root.elements.find_element_object(content_item.target);
 							}
 							
+							var image_directory = 'images';
+							if(typeof content_item.image_location !== 'undefined') {
+								image_directory = content_item.image_location;	
+							}
+
 							var init_order = function() {
 								var order_values = Array();
 								$list.children().each(function() {
 									var id = $(this).find('.id').first().html();
 									order_values.push(id);
 								});
-								$.post(branch.root.actions, {
+								branch.root.post(branch.root.actions, {
 									'action': content_item.id+'_set_order',
 									'v': JSON.stringify(order_values)
 								}, function(data) {
@@ -1539,7 +1773,7 @@ app.interpretation = {
 								order_values[index_dragged] = "-1";
 								var index_dropped = order_values.indexOf(dropped_value);
 								order_values.splice(index_dropped, 0, dragged_value);
-								$.post(branch.root.actions, {
+								branch.root.post(branch.root.actions, {
 									'action': content_item.id+'_set_order',
 									'v': JSON.stringify(order_values)
 								}, function(data) {
@@ -1552,7 +1786,7 @@ app.interpretation = {
 								$list: $list,
 								components: Array(),
 								send_data: null,
-								load: function(send_data, search_string) {
+								load: function(send_data, search_string, deny_on_load) {
 									var self = this;
 									self.components = Array();
 									//if(typeof no_refresh === 'undefined' && no_refresh != false) {
@@ -1567,12 +1801,18 @@ app.interpretation = {
 										search_term: search_string,
 										offset: self.offset	
 									};
-									if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
+									/*if(typeof content_item.post_data !== 'undefined' && typeof page_data !== 'undefined') {
 										for(var x in content_item.post_data) {
-											var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
-											eval(statement);
+											if(content_item.post_data[x] == "null") {
+												post_data[x] = null;	
+											} else {
+												var statement = "post_data."+x+" = page_data."+content_item.post_data[x];
+												console.log(statement);
+												eval(statement);
+											}
 										}
-									}
+									}*/
+									branch.apply_load_mask(post_data, content_item.post_data, page_data);
 									if(typeof send_data === 'undefined') {
 										if(this.persist_send_data != null) {
 											send_data = this.persist_send_data;	
@@ -1585,7 +1825,7 @@ app.interpretation = {
 										self.persist_send_data = send_data;
 									}
 									self.send_data = post_data;
-									$.post(branch.root.actions, post_data, function(data) {
+									branch.root.post(branch.root.actions, post_data, function(data) {
 										self.list_data = data;
 										$list_values_container.html("");	
 										//self.offset += data.length;
@@ -1619,8 +1859,13 @@ app.interpretation = {
 												row_item += "<div id='delete_button' class='action table_column' style=''>Action</div>";	
 											}			
 											if(typeof content_item.custom_actions !== 'undefined') {
+												var action_column = "action";
 												for(var x in content_item.custom_actions) {
-													row_item += "<div id='custom_action' class='custom_action table_column' style=''>Action</div>";
+													
+													if(typeof content_item.custom_columns !== 'undefined') {
+														action_column = content_item.custom_columns[x];	
+													}
+													row_item += "<div id='"+x+"' class='custom_action table_column' style=''>"+action_column+"</div>";
 												}
 											}
 											row_item += "</div></div>";	
@@ -1631,6 +1876,14 @@ app.interpretation = {
 											if(typeof data[x].id === 'undefined') {
 												data[x].id = x;
 												data[x].id_undefined = true;	
+											}
+											if(typeof content_item.column_order !== 'undefined') {
+												var column_order = content_item.column_order;
+												var store = data[x];
+												data[x] = {};
+												for(var i in column_order) {
+													data[x][column_order[i]] = store[column_order[i]];
+												}
 											}
 											var row_item = "<div class='table_row' id='"+data[x].id+"'>";
 											var li_information_count = 0;
@@ -1656,7 +1909,7 @@ app.interpretation = {
 													if(typeof content_item.content !== 'undefined' && typeof content_item.content[y] !== 'undefined') {
 														if(content_item.content[y] == 'image') {
 															column_value = data[x][y]+".png";
-															row_item += "<div id='"+y+"' class='"+y+" "+class_value+" table_column_image' style='"+style+" background-image:url(\"/images/"+column_value+"\");'>"+"</div>";	
+															row_item += "<div id='"+y+"' class='"+y+" "+class_value+" table_column_image' style='"+style+" background-image:url(\""+image_directory+"/"+column_value+"\");'>"+"</div>";	
 														} else if(content_item.content[y] == 'checkbox') {
 															var checked = data[x][y];
 															if(checked) {
@@ -1703,7 +1956,7 @@ app.interpretation = {
 												});	
 											}
 											if(typeof content_item.edit !== 'undefined') {
-												$row.append("<div id='edit_button' class='edit_button table_column'>Edit</div>");
+												$row.append("<div id='edit_button' class='edit_button table_column'><i class='icofont-ui-edit'></i> Edit</div>");
 												(function(data){
 													$row.find('.edit_button').click(function() {
 														var $this = $(this);
@@ -1712,7 +1965,7 @@ app.interpretation = {
 															$this.removeClass('saved');
 														}, 500);
 														if(typeof data.id_undefined === 'undefined') {
-															$.post(branch.root.actions, {
+															branch.root.post(branch.root.actions, {
 																action: 'get_'+content_item_id_singular,
 																id: data.id	
 															}, function(data) {
@@ -1725,7 +1978,7 @@ app.interpretation = {
 												}(data[x]));
 											}
 											if(typeof content_item.delete !== 'undefined') {
-												$row.append("<div id='delete_button' class='delete_button table_column'>Delete</div>");	
+												$row.append("<div id='delete_button' class='delete_button table_column'><i class='icofont-trash'></i> Delete</div>");	
 												(function(data){
 													$row.find('.delete_button').click(function() {
 														var post_data = {
@@ -1738,7 +1991,7 @@ app.interpretation = {
 														} else {
 															post_data.id = data.id;	
 														}
-														$.post(branch.root.actions, post_data, function(data) {
+														branch.root.post(branch.root.actions, post_data, function(data) {
 															self.load();
 														});
 													});
@@ -1764,10 +2017,51 @@ app.interpretation = {
 														if(typeof content_item.custom_actions[action_name].value !== 'undefined') {
 															action_value = content_item.custom_actions[action_name].value;
 														}
+														var is_checkbox = false;
+														if(action_value == "checkbox") {
+															is_checkbox = true;
+															action_value = '<input type="checkbox" id="'+action_name+'" />';	
+														}
 														if(href == "") {
-															$row.append("<div id='custom_action' class='custom_action table_column'>"+action_value+"</div>");
+															$row.append("<div id='"+action_name+"' class='custom_action table_column'>"+action_value+"</div>");
 														} else {
-															$row.append("<div id='custom_action' class='custom_action table_column'><a href='"+href+"'>"+action_value+"</a></div>");	
+															$row.append("<div id='"+action_name+"' class='custom_action table_column'><a href='"+href+"'>"+action_value+"</a></div>");	
+														}
+														var $row_action_item = null;
+														if(typeof content_item.custom_actions[action_name].defined_action !== 'undefined') {
+															$row_action_item = $row.find('#'+action_name).first();
+															switch(content_item.custom_actions[action_name].defined_action) {
+																case 'download':	
+																	$row_action_item.click(function() {
+																		var send_download_data = {};
+																		for(var i in content_item.custom_actions[action_name].href_data) {
+																			var href_data_index = content_item.custom_actions[action_name].href_data[i];
+																			send_download_data[i] = data[href_data_index];	
+																		}
+																		branch.root.download.download_file(send_download_data, content_item_id_singular);
+																	});
+																	break;
+															}
+														}
+														var $row_input;
+														if(is_checkbox) {
+															$row_input = $row.find('input#'+action_name);
+															if(data[action_name]) {
+																$row_input.first().prop('checked', true);	
+															}
+														}
+														if(typeof content_item.custom_actions[action_name].action !== 'undefined') {
+															$row_input.click(function() {
+																branch.root.post(branch.root.actions, {
+																	'action': content_item.custom_actions[action_name].action,
+																	'id': data.id,
+																	'completed': ($row_input.prop('checked') ? 1 : 0)
+																}, function(data) {
+																	if(typeof content_item.on_load !== 'undefined') {
+																		branch.on_load(content_item);
+																	}
+																});
+															});
 														}
 														/*$row.find('.delete_button').click(function() {
 															var post_data = {
@@ -1801,7 +2095,7 @@ app.interpretation = {
 																			checked = "0";	
 																		}
 																		//var $this = $(this);
-																		$.post(branch.root.actions, {
+																		branch.root.post(branch.root.actions, {
 																			'action': c+'_checked',
 																			'item_id': $row.find('#id').text(),
 																			'checked': checked
@@ -1887,6 +2181,14 @@ app.interpretation = {
 												branch.root.interpretation.view.single_row_columns($(this), true);
 											});*/
 										}
+										if(typeof content_item.extra_class !== 'undefined') {
+											$list_values_container.find('.table_row').each(function() {
+												var $this = $(this);
+												for(var c in content_item.extra_class) {
+													$this.find('.'+c).first().addClass(content_item.extra_class[c]);	
+												}
+											});
+										}
 										//branch.root.interpretation.view.single_row_columns($list_values_container.find('.table_row'), true);
 										
 										
@@ -1903,17 +2205,20 @@ app.interpretation = {
 										
 										if(typeof content_item.show_all_items === 'undefined' || content_item.show_all_items !== true) {
 											var list_count_post_data = {
-												action: content_item.id+"_list_count"	
+												action: content_item.id+"_list_count",
+												post_data: {}	
 											};
+											/*if(self.send_data.post_data) {
+												list_count_post_data.post_data = self.send_data.post_data;
+											} else*/ 
 											if(self.send_data != null) {
 												for(var y in self.send_data) {
 													if(y.indexOf('_id') == y.length-3) {
-														list_count_post_data[y] = self.send_data[y];
+														list_count_post_data.post_data[y] = self.send_data[y];
 													}
 												}
 											}
-											console.log(list_count_post_data);
-											$.post(branch.root.actions, list_count_post_data, function(data) {
+											branch.root.post(branch.root.actions, list_count_post_data, function(data) {
 												if(data <= self.list_data.length) {
 													$list_load_button.hide();	
 												} else {
@@ -1922,6 +2227,10 @@ app.interpretation = {
 											});
 										} else {
 											$list_load_button.hide();	
+										}
+										
+										if(typeof content_item.on_load !== 'undefined' && !deny_on_load) {
+											branch.on_load(content_item);
 										}
 										
 										branch.loaded_objects[page.id].loaded();
@@ -2013,14 +2322,15 @@ app.interpretation = {
 							}//
 							var form_object = {
 								$element: $form,
+								element_loaded_count: 0,
 								operation: {
 									elements: Array(),
 									/*find_element: function(reference) {
 										
 									},*/
-									load: function(data) {
+									load: function(data, callback) {
 										var self = this;
-										
+										self.element_loaded_count = 0;
 										if(data === 'self') {
 											data = {};
 											$form.find('.form_input').each(function() {
@@ -2070,8 +2380,17 @@ app.interpretation = {
 											}
 										}
 										if(typeof data === 'undefined') {
+											var element_length = branch.root.get_length(self.elements);
 											for(var x in this.elements) {
-												this.elements[x].operation.load();	
+												this.elements[x].operation.load(undefined, function() {
+													self.element_loaded_count++;
+													if(self.element_loaded_count == element_length && typeof callback !== 'undefined') {
+														callback();	
+													}
+												});	
+											}
+											if(element_length == 0) {
+												callback();
 											}
 										}
 										if(typeof data === 'undefined') {
@@ -2193,7 +2512,7 @@ app.interpretation = {
 												if(event.which == 13) {
 													var suggestion_object = $suggestions.find('.suggestion').first().data("suggestion_object");
 													$hidden_id.val(suggestion_object.id);
-													$input.val(suggestion_object.title);
+													$this.val(suggestion_object.title);
 													$suggestions.html("").show();
 													return;	
 												}
@@ -2211,7 +2530,7 @@ app.interpretation = {
 															$suggestion.data("suggestion_object", suggestion_value);
 															$suggestion.click(function() {
 																$hidden_id.val(suggestion_value.id);
-																$input.val(suggestion_value.title);
+																$this.val(suggestion_value.title);
 																set_value = suggestion_value.title;
 																$suggestions.html("");
 																//$suggestions.slideUp('fast');
@@ -2220,7 +2539,7 @@ app.interpretation = {
 													}(suggestion_value));
 												}
 											});
-											$.post(branch.root.actions, {
+											branch.root.post(branch.root.actions, {
 												'action': form_element.id+'_typeahead'	
 											}, function(data) {
 												suggestion_data = data;
@@ -2302,6 +2621,9 @@ app.interpretation = {
 												}
 												$input.data('default_value', split);
 											}
+											if($input[0].type === 'text') {
+												$input.datepicker();	
+											}
 											break;
 										case 'radio':
 											var append_value = "<div class='form_element flex'><div class='radio_buttons form_input' id='"+form_element.id+"'>";
@@ -2347,6 +2669,10 @@ app.interpretation = {
 												}
 											});	
 											break;
+										case 'number':
+											$form.append("<div class='form_element'><input type='number' id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"' /></div>");
+											$input = $form.find('#'+form_element.id).first();
+											break;
 										case 'text':
 											$form.append("<div class='form_element'><input type='text' id='"+form_element.id+"' class='form_input' placeholder='"+form_element.placeholder+"' /></div>");
 											$input = $form.find('#'+form_element.id).first();
@@ -2355,6 +2681,21 @@ app.interpretation = {
 													if(e.which == 32){
 														return false;
 													}
+													var contains = false;
+													for(var c in branch.illegal_characters) {
+														if($(this).val().indexOf(branch.illegal_characters[c]) != -1) {
+															contains = true;
+														}
+													}
+													if(contains) {
+														$(this).attr('invalid_base', 'true');
+														$(this).addClass('invalid');
+													} else {
+
+														$(this).attr('invalid_base', 'false');
+														$(this).removeClass('invalid');
+													}
+													//if($(this).val().i
 												});	
 											}
 											break;
@@ -2363,6 +2704,17 @@ app.interpretation = {
 											
 											var $form_password = $form.find('#'+form_element.id).first();
 											$input = $form_password;
+											$form_password.on('keypress', function(e) {
+												var contains = false;
+												for(var c in branch.illegal_characters) {
+													if($(this).val().indexOf(branch.illegal_characters[c]) != -1) {
+														contains = true;
+													}
+												}
+												if(contains) {
+													$(this).addClass('invalid');
+												}
+											});
 											
 											if(typeof form_element.no_confirmation === 'undefined') {
 												$form.append("<div class='form_element'><input type='password' maxlength='20' id='"+form_element.id+"_confirm' class='form_input pseudo_value' placeholder='"+form_element.placeholder+" (confirm)' /></div>");
@@ -2431,16 +2783,16 @@ app.interpretation = {
 													}
 												}
 											}
-											if(form_element.content == 'fetch') {
+											if(form_element.content === 'fetch') {
 												(function(form_element, select_object, $select){
-													select_object.operation.load = function(send_data) {
+													select_object.operation.load = function(send_data, callback) {
 														var self = this;
 														var post_data = {
 															action: 'get_'+form_element.id+'_select'	
 														};
 														branch.apply_load_mask(post_data, form_element.post_data, page_data);
-														console.log(post_data);
-														$.post(branch.root.actions, post_data, function(data) {
+														//console.log(post_data);
+														branch.root.post(branch.root.actions, post_data, function(data) {
 															$select.html("");
 															var first_val = data[0].id;
 															var option_name = "option";
@@ -2472,11 +2824,28 @@ app.interpretation = {
 															if(typeof form_element.on_change !== 'undefined') {
 																$select.trigger('change');	
 															}
-															
+															if(typeof callback !== 'undefined') {
+																callback();	
+															}
 														}, "json");
 													};
 												}(form_element, select_object, $select));
 												//select_object.operation.load();
+											} else {
+												$select.html("");
+												var option_name = "option";
+												if(typeof form_element.caption !== 'undefined') {
+													option_name = form_element.caption;	
+												}
+												$select.append("<option disabled selected value>Select "+option_name+"</option>");
+												for(var c in form_element.content) {
+													$select.append("<option value='"+form_element.content[c].value+"'>"+form_element.content[c].title+"</option>");	
+												}
+												select_object.operation.load = function(send_data, callback) {
+													if(typeof callback !== 'undefined') {
+														callback();	
+													}
+												};
 											}
 											if(typeof form_element.on_change !== 'undefined') {
 												$select.change(function() {
@@ -2530,7 +2899,7 @@ app.interpretation = {
 														if(form_element.require_id !== 'undefined') {
 															$suggest.focusout(function() {
 																if($suggest_value.val() == "-1") {
-																	$.post(branch.root.actions, {
+																	branch.root.post(branch.root.actions, {
 																		action: 'get_'+form_element.id+'_suggest_validation',
 																		search_term: $suggest.val()		
 																	}, function(data) {
@@ -2552,7 +2921,7 @@ app.interpretation = {
 														$suggest.keyup(function() {
 															var value = $(this).val();
 															$suggest_value.val("-1");
-															$.post(branch.root.actions, {
+															branch.root.post(branch.root.actions, {
 																action: 'get_'+form_element.id+'_suggest',
 																search_term: value	
 															}, function(data) {
@@ -2581,7 +2950,7 @@ app.interpretation = {
 											$input = $suggest;
 											break;
 										default:
-											var statement = "branch.root.custom_elements."+form_element.type+".init(form_element, $container, page_data)";
+											var statement = "branch.root.custom_elements."+form_element.type+".init(form_element, $form, page_data, branch, page)";
 											eval(statement);
 											break;
 									}
@@ -2589,13 +2958,15 @@ app.interpretation = {
 										$input.change(function() {
 											var $this = $(this);
 											//if($form.find('#id').val() != "-1") {
-												$.post(branch.root.actions, {
+												branch.root.post(branch.root.actions, {
 													action: form_element.id+'_validation',
 													value: $this.val(),
 													id: $form.find('#id').val()
 												}, function(data) {
 													if(data) {
-														$this.removeClass('invalid');	
+														if($this.attr('invalid_base') == null || $this.attr('invalid_base') == 'false') {
+															$this.removeClass('invalid');
+														}	
 													} else {
 														$this.addClass('invalid');
 													}
@@ -2706,7 +3077,11 @@ app.interpretation = {
 										}
 									});
 									if(!valid) {
-										branch.view.pop_up.display("Form is not valid, please fix invalid fields.", "fadeout");
+										var error_message_text = "Form is not valid, please fix invalid fields.";
+										if(typeof content_item.error_message !== 'undefined') {
+											error_message_text = content_item.error_message;	
+										}
+										branch.view.pop_up.display(error_message_text, "fadeout");
 										return false;
 									}
 									$form.find('.form_input').each(function() {
@@ -2766,39 +3141,46 @@ app.interpretation = {
 										for(var x in content_item.on_submit) {
 											var callback_item = content_item.on_submit[x];
 											var load_mask_value = true;
-											console.log(callback_item);
+											//console.log(callback_item);
 											//alert(typeof callback_item);
 											//alert(typeof callback_item.link);
+											var continue_parse = true;
 											if(typeof callback_item == 'object' && typeof callback_item.link !== 'undefined') {
 												//console.log('inside');
 												load_mask_value = callback_item.load_mask;
 												callback_item = callback_item.link;	
+											} else if(typeof callback_item === 'string' && callback_item.indexOf('_app') == 0) {
+												var statement = "branch.root"+callback_item.split('_app')[1]+"();";
+												eval(statement);
+												continue_parse = false;
 											}
-											
-											var split = callback_item.split("_");
-											var type = split[split.length-1]+"s";
-											var statement = "var element = branch.root.elements."+type+"['"+callback_item+"']";
-											eval(statement);
-											
-											if(typeof content_item.on_submit_load_mask !== 'undefined' && load_mask_value !== false) {
-												var on_submit_send_data;
-												if(typeof on_submit_send_data === 'undefined') {
-													on_submit_send_data = {
-														
+											if(continue_parse) {
+												var split = callback_item.split("_");
+												var type = split[split.length-1]+"s";
+												var statement = "var element = branch.root.elements."+type+"['"+callback_item+"']";
+												eval(statement);
+												if(typeof content_item.on_submit_load_mask !== 'undefined' && load_mask_value === true) {
+													var on_submit_send_data;
+													if(typeof on_submit_send_data === 'undefined') {
+														on_submit_send_data = {
+															
+														}
+														form_object.$element.find('.form_input').each(function() {
+															var id = $(this).attr('id');
+															on_submit_send_data[id] = $(this).val();
+														});
 													}
-													form_object.$element.find('.form_input').each(function() {
-														var id = $(this).attr('id');
-														on_submit_send_data[id] = $(this).val();
-													});
+												
+													var on_submit_send_data_value = {};
+													if(typeof content_item.on_load_load_mask !== 'undefined') {
+														for(var x in content_item.on_submit_load_mask) {
+															on_submit_send_data_value[content_item.on_load_load_mask[x]] = on_submit_send_data[x];
+														}
+													}
+													element.operation.load(on_submit_send_data_value);	
+												} else {
+													element.operation.load();	
 												}
-											
-												var on_submit_send_data_value = {};
-												for(var x in content_item.on_submit_load_mask) {
-													on_submit_send_data_value[content_item.on_load_load_mask[x]] = on_submit_send_data[x];
-												}
-												element.operation.load(on_submit_send_data_value);	
-											} else {
-												element.operation.load();	
 											}
 										}
 										if(typeof content_item.new_on_save !== 'undefined') {
@@ -2828,7 +3210,7 @@ app.interpretation = {
 										var statement = "branch.root."+content_item.custom_action+"(submit_data, submit_callback)";
 										eval(statement);	
 									} else {
-										$.post(branch.root.actions, submit_data, submit_callback);
+										branch.root.post(branch.root.actions, submit_data, submit_callback);
 									}
 								});
 							}
@@ -2849,7 +3231,7 @@ app.interpretation = {
 										action: 'delete_'+content_item.id,
 										id: $form.find('#id').first().val()
 									};
-									$.post(branch.root.actions, post_data, function(data) {
+									branch.root.post(branch.root.actions, post_data, function(data) {
 										if(typeof content_item.on_delete_navigate !== 'undefined') {
 											branch.root.navigation.navigate_to(content_item.on_delete_navigate);
 										}
@@ -2859,22 +3241,34 @@ app.interpretation = {
 							branch.root.assign_root_object(form_object);
 							branch.root.elements.forms[content_item.id+"_form"] = form_object;
 							branch.loaded_objects[page.id].loaded_callbacks.push(function() {
-								form_object.operation.load();
-								if(typeof content_item.get_load_mask !== 'undefined') {
-									for(var x in content_item.get_load_mask) {
-										if(typeof page_data[x] !== 'undefined') {
-											$form.find('#'+content_item.get_load_mask[x]).val(page_data[x]);
+								//console.log(page_data);
+								form_object.operation.load(undefined, function() {
+									if(typeof content_item.get_load_mask !== 'undefined') {
+										//console.log(content_item.get_load_mask);
+										for(var x in content_item.get_load_mask) {
+											if(typeof page_data[x] !== 'undefined') {
+												//alert(page_data[x]);
+												$form.find('#'+content_item.get_load_mask[x]).val(page_data[x]);
+											}
 										}
 									}
-								}
-								
-								if(typeof content_item.peristant_values !== 'undefined') {
-									$.post(branch.root.actions, {
-										'action': 'get_'+content_item.id
-									}, function(data) {
-										form_object.operation.load(data);	
-									}, "json");
-								}
+									
+									if(typeof content_item.peristant_values !== 'undefined') {
+										var post_data = {
+											'action': 'get_'+content_item.id
+										};
+										var $id = $form.find('#id');
+										if($id.length > 0) {
+											var id = $id.first().val();
+											if(id != -1 && id != '') {
+												post_data.id = id;
+											}
+										}
+										branch.root.post(branch.root.actions, post_data, function(data) {
+											form_object.operation.load(data);	
+										}, "json");
+									}
+								});
 							});
 							//form_object.operation.load();
 							
@@ -2959,7 +3353,7 @@ app.interpretation = {
 							$content_item_element = $container.find('.content#'+content_item.id).first();
 						}
 						if(value == 'fetch') {
-							$.post(branch.root.actions, {
+							branch.root.post(branch.root.actions, {
 								'action': 'get_'+content_item.id	
 							}, function(data) {
 								$content_item_element.html(data);
@@ -2990,7 +3384,7 @@ app.interpretation = {
 											post_data[z] = page_data[content_item.load_mask[z]];	
 										}
 									}	
-									$.post(branch.root.actions, post_data, function(data) {
+									branch.root.post(branch.root.actions, post_data, function(data) {
 										$discussion.find('.discussion_content').first().html("");
 										self.parse(data, $discussion.find('.discussion_content').first());
 									}, "json"); // "json"								
@@ -3016,7 +3410,7 @@ app.interpretation = {
 							 
 						});*/
 						branch.root.events.press_enter($comment_object, function() {
-							$.post(branch.root.actions, {
+							branch.root.post(branch.root.actions, {
 								action: '_make_comment',
 								content: $comment_object.val(),
 								reference_id: page_data.id,
@@ -3032,9 +3426,17 @@ app.interpretation = {
 						});
 						discussion_object.operation.load();
 						break;
+					/*case 'calendar':
+						break;*/
 					default:
-						var statement = "branch.root.custom_elements."+content_item.type+".init(content_item, $container, page_data, branch, page)";
-						eval(statement);
+						if(typeof branch.root.elements[content_item.type] !== 'undefined') {
+							branch.root.elements[content_item.type].init(content_item, $container, page_data, branch, page);
+						} else {
+							if(typeof branch.root.custom_elements !== 'undefined') {
+								var statement = "branch.root.custom_elements."+content_item.type+".init(content_item, $container, page_data, branch, page)";
+								eval(statement);
+							}
+						}
 						break;
 					/*case 'tags':
 						var id = content_item.id;
@@ -3057,7 +3459,7 @@ app.interpretation = {
 					for(var x in content_item.requirement_data_mask) {
 						post_data[content_item.requirement_data_mask[x]] = page_data[x];
 					}
-					$.post(branch.root.actions, post_data, function(data) {
+					branch.root.post(branch.root.actions, post_data, function(data) {
 						if(data == 1) {
 							$content_item_element.show();	
 						} else {
@@ -3087,8 +3489,14 @@ app.interpretation = {
 									if(typeof page_data === 'undefined') {
 										page_data = {};	
 									}
-									var statement = "var linked_value = page_data."+form_element+";";
-									eval(statement);
+									//console.log(page_data);
+									//alert(form_element);
+									//var statement = "var linked_value = page_data."+form_element+";";
+									var linked_value = page_data[form_element];
+									//alert("instance_count: "+page_data.instance_count);
+									//alert(page_data);
+									//alert("instance_count: "+page_data.instance_count);
+									//eval(statement);
 									if(dependency.value == 'unset') {
 										if(typeof linked_value === 'undefined' || linked_value == "-1") {
 											show = true;
@@ -3109,6 +3517,8 @@ app.interpretation = {
 											hide = true;
 										}
 									} else {
+										//alert(linked_value);
+										//alert(dependency.value);
 										if(typeof linked_value !== 'undefined' && linked_value == dependency.value) {
 											show = true;
 											if(typeof content_item_object !== 'undefined') {
@@ -3221,7 +3631,7 @@ app.interpretation = {
 	find_page: function(page_id) {
 		return this.get_pages_data(Array(page_id))[0];	
 	},
-	apply_load_mask: function(post_data, load_mask, page_data) {
+	apply_load_mask: function(post_data, load_mask, page_data, conform_ids) {
 		var branch = this;
 		for(var z in load_mask) {
 			if(load_mask[z].indexOf('.') != -1) {
@@ -3242,10 +3652,15 @@ app.interpretation = {
 				var value = callback_object.$element.find('#'+form_element).val();
 				
 				post_data[z] = value;	
+			} else if(load_mask[z] == "null") {
+				post_data[z] = null;
 			} else {
 				post_data[z] = page_data[load_mask[z]];	
 			}
-		}	
+		}
+		if(conform_ids) {
+			
+		}
 	},
 	view: {
 		textarea: {
@@ -3385,7 +3800,7 @@ app.interpretation = {
 				original_date = original_date.split(" ")[0];
 				var date_split = original_date.split("-");
 				$container.click(function() {
-					$.post(branch.root.actions, {
+					branch.root.post(branch.root.actions, {
 						action: 'calendar_popover',
 						year: date_split[0],
 						month: date_split[1],

@@ -1,9 +1,12 @@
 <?
-class calendar {
-	private $db;
+class calendar extends _class {
 	
-	function __construct() {
-		$this->db = new mysql();
+	public function __construct($sql=NULL, $statement=NULL, $user_id=NULL) {
+		$this->sql = $sql;
+		$this->statement = $statement;
+		if($user_id != NULL) {
+			$this->set_user_id($user_id);	
+		}
 	}
 	
 	function get_string($string) {

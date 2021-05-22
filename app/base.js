@@ -3,6 +3,127 @@ var base = {
 	user_id: "-1",
 	actions: "actions.php",
 	language: 0,
+	use_rtc: false,
+	main_settings: {
+		get_settings: function() {
+			var branch = this;
+			$.post(branch.root.actions, {
+				'action': 'get_main_settings'
+			}, function(data) {
+				if(typeof data.bold_font !== 'undefined' && data.bold_font == 1) {
+					$('head').first().append("<style id='bold_style'> body, input, select, button { font-weight:100 !important; font-family:'helvetica'; }  </style>");
+				} else {
+					$('head').find('#bold_style').first().remove();
+				}
+			}, "json");
+		}
+	},
+	download: {
+		download_file: function(data, content_item_id_singular) {
+			var branch = this;
+			var post_data = {
+				'action': 'get_'+content_item_id_singular
+			};
+			for(var x in data) {
+				post_data[x] = data[x];
+			}
+			branch.root.post(branch.root.actions, post_data, function(data) {
+				//alert(data.file_value);
+				if(data.file_value.indexOf('data:image/png;') == 0 || data.file_value.indexOf('data:application/pdf;') == 0) { //display images and pdfs download otherwise
+					window.open(data.file_value);
+				} else {
+					branch.download_file_2(data.filename, data.file_value);
+				}
+			});
+		},
+		download_file_2: function(filename, content) {
+			/*var blob = new Blob([content]);
+			var evt = document.createEvent("HTMLEvents");
+			evt.initEvent("click");
+			$("<a>", {
+				download: filename,
+				href: content//webkitURL.createObjectURL(blob)
+			}).get(0).dispatchEvent(evt);*/
+
+			$('#dummy_div').html("<a download='"+filename+"' id='to_download'>download</a>");
+			$('#dummy_div').find('#to_download').first().attr('href', content)[0].click();
+		}
+	},
+	post: async function(action, post_data, callback, datatype, error_callback) {
+		var branch = this;
+		/*if(typeof rtc === 'undefined') {
+			rtc = false;	
+		}*/
+		if(post_data.action.indexOf('delete') != -1) {
+			branch.dialog.init("Are you sure you want to delete this item?", async function() {
+				//$.post(action, post_data, callback);
+				//move to sub-call
+				branch.sub_post(action, post_data, callback, datatype, error_callback);
+			});
+		} else {
+			/*if(branch.use_rtc) {
+				console.log('ws_send: ');
+				//console.log({...post_data});
+				var send_post_data = {};
+				send_post_data.app_id = branch.app_id;
+				for(var x in post_data) {
+					send_post_data[x] = post_data[x];
+				}
+
+				var result_data = await branch.ws.send(send_post_data, true);
+				//if(datatype == 'json') {
+					//result_data = JSON.parse(result_data);
+					result_data = result_data.ws_message;
+				//}
+				console.log(result_data);
+				if(typeof callback !== 'undefined') {
+					callback(result_data);
+				}
+			} else {
+				$.post(action, post_data, callback, datatype);
+			}*/
+			branch.sub_post(action, post_data, callback, datatype, error_callback);
+		}
+	},
+	sub_post: async function(action, post_data, callback, datatype, error_callback) {
+		var branch = this;
+		if(branch.use_rtc) {
+			var send_post_data = {};
+			send_post_data.app_id = branch.app_id;
+			for(var x in post_data) {
+				send_post_data[x] = post_data[x];
+			}
+
+			var result_data = await branch.ws.send(send_post_data, true);
+			if(typeof result_data.error !== 'undefined') {
+				switch(result_data.error) {
+					case 'no_nc':
+						setTimeout(function() {
+							branch.dialog.init("Lost connection to Noob Cloud, please check your Noob Cloud application, and try again.", undefined, undefined, function() {
+
+							});
+							branch.dialog.show();
+						}, 1250);
+						if(typeof error_callback !== 'undefined') {
+							error_callback();
+						}
+						break;
+				}
+			} else {
+				result_data = result_data.ws_message;
+				//console.log(result_data);
+				if(typeof callback !== 'undefined') {
+					callback(result_data);
+				}
+			}
+		} else {
+			$.post(action, post_data, callback, datatype);
+		}
+	},
+	delay: async function(time) {
+	    await new Promise(r => setTimeout(r, time)); 
+	    return true;
+	},
 	excluded_properties: Array(
 		'inherit',
 		'parent',
@@ -54,7 +175,7 @@ var base = {
 				}
 			}
 		}
-		function inherit(object) {
+		/*function inherit(object) {
 			var statement = 'var obj = '+object+';';
 			eval(statement);
 			if(typeof obj.inherit !== 'undefined' && typeof obj.inherit === 'string') {
@@ -67,7 +188,7 @@ var base = {
 					inherit(str);	
 				}
 			}
-		}
+		}*/
 		if(typeof path === 'undefined') {
 			assign_root("root");
 			//inherit("root");
@@ -75,6 +196,13 @@ var base = {
 			assign_root(path);
 			//inherit(path);	
 		}
+	},
+	get_length: function(object) {
+		var length = 0;
+		for(var x in object) {
+			length++;	
+		}
+		return length;
 	},
 	gather_form: function($container) {
 		var $inputs = $container.find('.input_element');
@@ -388,6 +516,9 @@ var base = {
 		}, function(data) {
 			alert(data);
 		});*/
+		if(window.location.href.trim().indexOf('https') != 0 && window.location.href.trim().indexOf('myndasaga') == -1  && window.location.href.trim().indexOf('192.168') == -1) {
+			window.location.href = "https://"+window.location.href.split('http://').join('');
+		}
 		$.post(this.actions, {
 			action: 'assets'
 		}, function(data) {
@@ -405,6 +536,8 @@ var base = {
 			
 			self.loading_completed['app_state'] = false;
 			self.loading.init();
+
+			self.main_settings.get_settings();
 			
 			//alert(self.login);
 			
@@ -594,12 +727,14 @@ var base = {
 			}
 		});
 	},
+	custom_elements: {},
 	current_user: -1,
 	functions: {
 		copy_object: function(object, copy) {
 			for(x in copy) {
-				var str = 'object.'+x+' = copy.'+x;
-				eval(str);
+				//var str = 'object.'+x+' = copy.'+x;
+				//eval(str);
+				object[x] = copy[x];
 			}	
 			//return object;
 		},
@@ -700,8 +835,14 @@ var base = {
 			});
 		}
 	},
-	replace_append: function(html, $container, $last_item) {
-		var id = $(html).attr('id');
+	replace_append: function(html, $container, $last_item, set_id, prefix) {
+		var id = null;
+		if(typeof set_id === 'undefined') {
+			id = $(html).attr('id');
+		} else {
+			id = set_id;	
+		}
+		
 		var $pre = $container.find('#'+id);
 		if($pre.length == 0) {
 			if($last_item == null) {
@@ -719,7 +860,11 @@ var base = {
 				$pre.remove();	
 			}
 		}
-		return $container.find('#'+id);
+		/*if(typeof prefix !== 'undefined') {
+			id = prefix+'_'+id;
+		}*/
+		return $container.children().last();
+		//return $container.find('#'+id).first();
 	},
 	clear_removed_items: function(items, $container, id_prefix, li_class) {
 		var assoc_data = Array();
@@ -795,6 +940,8 @@ var base = {
 	},
 	login_attempts: 0,
 	user_menu: {
+		username: null,
+		password: null,
 		get_username: function() {
 			$.post(this.root.actions, {
 				action: 'get_username'	
@@ -805,7 +952,7 @@ var base = {
 		login_callbacks: Array(),
 		init: function(callback) {
 			var branch = this;
-			/*$('#body').click(function() {
+			$('#body.night').click(function() {
 				$('.console').addClass('console_back');
 				$('.body_container').removeClass('blur');
 				$('#body').animate({
@@ -824,7 +971,7 @@ var base = {
 						'display': 'none'
 					});
 				});
-			});*/
+			});
 			$('#overview_button').click(function() {
 				$('.console').removeClass('console_back');
 				$('.body_container').addClass('blur');
@@ -898,6 +1045,9 @@ var base = {
 					action: 'logout'	
 				}, function(data) {
 					branch.root.user_id = "-1";
+					if(branch.root.use_rtc) {
+						branch.root.ws.close_connection();
+					}
 					$('.logged_in_options').hide();
 					$('.logged_out_options').show();
 					$('.user_options').animate({
@@ -940,11 +1090,13 @@ var base = {
 			this.root.events.press_enter($('#username'), function() { $('button.sign_in').click() });
 			this.root.events.press_enter($('#password'), function() { $('button.sign_in').click() });
 			$('button.sign_in').click(function() {
+				branch.username = $('.login #username').val();
+				branch.password = $('.login #password').val();
 				$.post(branch.root.actions, {
 					action: 'login',
 					username: $('.login #username').val(),
 					password: $('.login #password').val()	
-				}, function(data) {
+				}, async function(data) {
 					if(data != "-1") {
 						branch.root.user_id = data;		
 						/*branch.root.navigation.recent_hash = "";
@@ -967,15 +1119,21 @@ var base = {
 								'display': 'none'
 							});
 						});*/
+						if(branch.root.use_rtc) {
+							await branch.root.ws.client_login_init();
+						} 
 						branch.root.navigation.reload_hash();
 						branch.remove_login_overlay();
 						branch.get_username();
+						
+
 						if(typeof callback !== 'undefined') {
 							callback();
 						}
 						for(var x in branch.login_callbacks) {
 							branch.login_callbacks[x]();	
 						}
+						
 					} else {
 						branch.get_password_attempts();
 					}
@@ -996,10 +1154,13 @@ var base = {
 				if(typeof branch.root.navigation !== 'undefined') {		
 					branch.root.navigation.poll_hash();
 				}
-				if(data == "-1") {
+				//alert(branch.root.ws.client_id);
+				if(data == "-1" || (branch.root.use_rtc && branch.root.ws.client_id == -1)) {
 					//$('.logged_in_options').hide();
 					//$('.logged_out_options').show();
-					if(typeof branch.root.definition.preferences !== 'undefined' && typeof branch.root.definition.preferences.app_login !== ' undefined' && branch.root.definition.preferences.app_login == true) {
+					if(typeof branch.root.definition.preferences !== 'undefined' && typeof branch.root.definition.preferences.app_login !== ' undefined' && branch.root.definition.preferences.app_login == true || typeof branch.root.definition.prefences === 'undefined' || branch.root.definition.prefences.app_login === 'undefined') {
+						
+						//alert(branch.root.ws.client_id);
 						branch.display_login_overlay();
 					}
 				} else {	
@@ -1009,11 +1170,11 @@ var base = {
 					if($('.console').length > 0) {
 						$('.console').addClass('console_back');
 					}
-					branch.get_username();
-				}			
-				if(typeof callback !== 'undefined') {
-					callback();
-				}
+					branch.get_username();	
+					if(typeof callback !== 'undefined') {
+						callback();
+					}
+				}		
 			});
 		},
 		get_password_attempts: function() {

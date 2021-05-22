@@ -1,9 +1,8 @@
 <?
 
 $config_global = array(
-	'database_username' => 'noob',
-	'database_password' => 'noob',
-	'streamline' => false
+	'database_username' => 'root',
+	'database_password' => ''
 );
 
 

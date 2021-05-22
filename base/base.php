@@ -15,8 +15,11 @@ class base {
 	protected $modules;
 	public $login_callbacks = array();
 	
-	function __construct($app_id=NULL, $project_root) {
+	private $encryption;
+	
+	function __construct($app_id=NULL, $project_root=NULL) {
 		@session_start();
+		//session_regenerate_id(true);
 		$this->app_id = $app_id;
 		$this->project_root = $project_root;
 		$this->server_root = $_SERVER["DOCUMENT_ROOT"]; 
@@ -30,10 +33,39 @@ class base {
 		}
 		$this->sql = new mysql($app_id);
 		$this->statement = statement::init($this->sql, $app_id, $this->user_id);
+		
 	}
 	
 	function get_connection() {
 		return $this->sql->get_connection();	
+	}
+
+	function get_main_settings() {
+		$query = "SELECT * FROM app.settings WHERE user_id = ".$this->user_id;
+		$row = $this->sql->get_row($query, 1);
+		/*$result = array();
+		foreach($rows as $key => $row) {
+			$result[$row['property']] = $row['value'];
+		}*/
+		return $row;
+	}
+
+	function get_static_data_state() {
+		$query = "SELECT * FROM app.static_data_state ORDER BY id DESC LIMIT 1";
+		return $this->sql->get_row($query, 1)['modified'];
+	}
+
+	function get_static_data_base() {
+		$result = array();
+
+		$query = "SELECT * FROM app.colors";
+		$result['colors'] = $this->sql->get_rows($query, 1);
+		return $result;
+	}
+
+	function get_ws_server() {
+		$query = "SELECT * FROM app.ws_servers ORDER BY id DESC LIMIT 1";
+		return $this->sql->get_row($query, 1)['path'];
 	}
 	
 	function application_update($v) {
@@ -49,23 +81,6 @@ class base {
 		}
 		return $row;
 	}
-	
-	private $access_key_digits;
-	
-	function generate_key() {
-		$this->access_key_digits = range(0, 9);
-		$this->access_key_digits = array_merge($this->access_key_digits, range("a", "z"));
-		$this->access_key_digits = array_merge($this->access_key_digits, range("A", "Z"));
-		$length = 50;
-		$counter = 0;
-		$result = [];
-		while($counter < $length) {
-			$result[] = $this->access_key_digits[rand(0, count($this->access_key_digits)-1)];
-			$counter++;	
-		}
-		return implode("", $result);
-	}
-	
 	
 	function get_definition() {
 		$definition_location = $this->server_root.$this->project_root."/app/definition.js";
@@ -87,29 +102,10 @@ class base {
 		}
 		return NULL;
 	}
-	
-	public function store_session() {
-		$query = "DELETE FROM app.session WHERE sess_id = '".session_id()."'"; //$_COOKIE['PHPSESSID']
-		$this->sql->execute($query);
-		$query = "DELETE FROM app.session WHERE user_id = ".$this->user_id.""; //$_COOKIE['PHPSESSID']
-		$this->sql->execute($query);
-		$query = "INSERT INTO app.session (sess_id, user_id) VALUES('".session_id()."', ".$this->user_id.")";
-		$this->sql->execute($query);
-	}
-	
+		
 	public function get_sess_id() {
 		return $_COOKIE['PHPSESSID'];	
-	}
-	
-	public function get_session() {
-		$query = "SELECT * FROM app.session WHERE sess_id = '".session_id()."'";
-		$user_id = $this->sql->get_row($query)['user_id'];
-		if($user_id != "") {
-			$_SESSION['user_id'] = $user_id;	
-			return $_SESSION['user_id'];
-		}
-		return "";
-	}
+	}	
 	
 	public function set_var($var, $index) {
 		if(isset($var[$index])) {
@@ -175,7 +171,15 @@ class base {
 			$files = get_included_files();
 		}
 		$classes = array();
-				
+		$remove_indicies = array();
+		foreach($files as $index => $file) {
+			if(strlen(trim($file)) == 0) {
+				$remove_indicies[] = $index;	
+			}
+		}
+		foreach($remove_indicies as $index) {
+			unset($files[$index]);	
+		}
 		foreach($files as $file) {
 			$handle = fopen($file, "r");
 			$counter = 0;
@@ -214,7 +218,7 @@ class base {
 					if($pos != false) {
 						$class_name = substr($line, $pos+9, $end-($pos+9));
 						$class_name = trim($class_name);
-						if($class_name != "" && $class_name != "app" && $class_name != "base" && !$this->is_loaded($class_name) && !$this->is_excluded($class_name)) { //
+						if($class_name != "" && strpos($class_name, "app") === false && $class_name != "base" && !$this->is_loaded($class_name) && !$this->is_excluded($class_name)) { //
 							if($class_name != $current_class) {
 								$classes[$class_name] = true;
 							}
@@ -226,7 +230,17 @@ class base {
 			}
 			fclose($handle);
 		}
-				
+		
+		$remove_indicies = array();
+		foreach($classes as $index => $file) {
+			if(strpos($index, "'.") !== false) {
+				$remove_indicies[] = $index;	
+			}
+		}
+		foreach($remove_indicies as $index) {
+			unset($classes[$index]);	
+		}
+		//var_dump($classes);		
 		$autoload = array();
 		foreach($classes as $class => $active) {
 			array_push($this->loaded_classes, $class);
@@ -244,12 +258,17 @@ class base {
 			}
 			array_push($autoload, $path);
 		}	
+		usort($autoload, function($a, $b) {
+			return strlen($a)-strlen($b);
+		});
 		if(count($autoload) > 0) {
 			$this->autoload($autoload);
 		}
-		
 		foreach($autoload as $class) {
-			require_once($class);
+			//var_dump($class);
+			if(strlen(trim($class)) > 0) {
+				require_once($class);
+			}
 		}
 	}
 	
@@ -316,16 +335,18 @@ class base {
 	
 	public function logout($v) {
 		$_SESSION['user_id'] = -1;
+		/*session_unset();
+		session_destroy();*/
 		return -1;	
 	}
 	
-	public function get_username($v) {
+	public function get_username($v=NULL) {
 		$query = "SELECT email FROM app.users WHERE id = ".$this->user_id;
 		$row = $this->sql->get_row($query, 1, NULL, true);
 		return $row['email'];
 	}
 	
-	public function get_user_id($v) {
+	public function get_user_id() { //$v
 		if(isset($this->user_id)) {
 			return $this->user_id;
 		} else {

@@ -11,8 +11,9 @@ class item {
 	protected $_class;
 	protected $foreign_key;
 	protected $table_limit;
+	protected $no_id=false;
 	
-	function __construct($item_id, $item_table, $_class, $ordered=false, $language=0, $foreign_key=NULL, $table_limit=10) {
+	function __construct($item_id, $item_table, $_class, $ordered=false, $language=0, $foreign_key=NULL, $table_limit=10, $no_id=false) {
 		$this->item_id = $item_id;
 		$this->item_table = $item_table;
 		$this->ordered = $ordered;
@@ -23,18 +24,26 @@ class item {
 		$this->language = $language;
 		$this->foreign_key = $foreign_key;
 		$this->table_limit = $table_limit;
+		$this->no_id = false;
 	}
 	
 	function _($v) {
 		$this->statement->generate($v, $this->item_table);
 		$this->sql->execute($this->statement->get());
 		$id = $this->sql->last_id($v);
+		
 		if($this->ordered) {
 			$query = "INSERT INTO item_order (connect_id, connect_value, order_value) VALUES('".$id."', '".$this->item_id."', '-1')";
 			$this->sql->execute($query);	
 		}
 		
 		return $id;
+	}
+	
+	public $alias;
+	
+	function set_alias($alias) {
+		$this->alias = $alias;
 	}
 	
 	function get($id) {
@@ -47,7 +56,7 @@ class item {
 		$this->sql->execute($query);	
 	}
 	
-	function table($search_term=NULL, $offset=0, $item_id=NULL, $post_data=NULL) {
+	function table($search_term=NULL, $offset=0, $item_id=NULL, $post_data=NULL, $select_columns=NULL) {
 		$item_id_string = "";
 		if($item_id != NULL && $this->foreign_key != NULL) {
 			$item_id_string = " WHERE ".$this->item_table.".".$this->foreign_key." = ".$item_id;	
@@ -115,7 +124,19 @@ class item {
 			$user_query .= " ".$this->item_table.".user_id = ".$this->_class->get_user_id()." ";	
 		}
 		
-		$query = "(SELECT ".$this->item_table.".* ".$order_column." FROM ".$this->item_table.$query_order_table.$item_id_string.$query_search.$query_order.$user_query.")";
+		$query = "SELECT ".$this->item_table.".* ";
+		if($select_columns != NULL) {
+			$query = "SELECT ";
+			$counter = 0;
+			foreach($select_columns as $key => $column) {
+				if($counter > 0) {
+					$query .= ", ";
+				}
+				$query .= $this->item_table.".".$column;
+				$counter++;
+			}
+		}
+		$query .= $order_column." FROM ".$this->item_table.$query_order_table.$item_id_string.$query_search.$query_order.$user_query."";
 		if($query_order != "") {
 			if($order_column != "") {
 				$order_column = ", -1 as order_value";	
@@ -124,18 +145,32 @@ class item {
 			if($item_id_string != "" || $user_query != "") {
 				$where_and = " AND";	
 			}
-			$query .= " UNION (SELECT ".$this->item_table.".* ".$order_column." FROM ".$this->item_table." ".$item_id_string.$user_query.$where_and." (SELECT COUNT(*) FROM item_order WHERE item_order.connect_value = '".$this->item_table."' AND item_order.connect_id = ".$this->item_table.".id) = 0)";	
+			//$query .= " UNION SELECT ".$this->item_table.".* ";
+			if($select_columns != NULL) {
+				$query = "UNION SELECT ";
+				$counter = 0;
+				foreach($select_columns as $key => $column) {
+					if($counter > 0) {
+						$query .= ", ";
+					}
+					$query .= $this->item_table.".".$column;
+					$counter++;
+				}
+			} else {
+				$query .= " UNION SELECT ".$this->item_table.".* ";
+			}
+			$query .= $order_column." FROM ".$this->item_table." ".$item_id_string.$user_query.$where_and." (SELECT COUNT(*) FROM item_order WHERE item_order.connect_value = '".$this->item_table."' AND item_order.connect_id = ".$this->item_table.".id) = 0";	
 		}
 		$query .= $order_end_string.$offset_string;
 		//var_dump($query);
 		return $this->sql->get_rows($query, 1);
 	}
 	
-	function list_count($item_id=NULL, $post_data=NULL) {
+	function list_count($post_data=NULL) { //$item_id=NULL,
 		$item_id_string = "";
-		if($item_id != NULL && $this->foreign_key != NULL) {
+		/*if($item_id != NULL && $this->foreign_key != NULL) {
 			$item_id_string = " WHERE ".$this->item_table.".".$this->foreign_key." = ".$item_id;	
-		}
+		}*/
 		if($post_data !== NULL) {
 			foreach($post_data as $key => $value) {
 				if($item_id_string == "") {

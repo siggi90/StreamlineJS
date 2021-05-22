@@ -141,7 +141,7 @@ class statement {
 				} else if($row['COLUMN_NAME'] == 'password' && isset($values['password'])) {
 					$values['password'] = password_hash($values['password'], PASSWORD_DEFAULT);
 					//var_dump($values['password']);
-				} else if(strpos($row['COLUMN_NAME'], "_id") === strlen($row['COLUMN_NAME'])-3 && isset($values[$row['COLUMN_NAME']]) && $values[$row['COLUMN_NAME']] == "-1") {
+				} else if(($row['COLUMN_NAME'] == 'id' || strpos($row['COLUMN_NAME'], "_id") === strlen($row['COLUMN_NAME'])-3) && isset($values[$row['COLUMN_NAME']]) && $values[$row['COLUMN_NAME']] == "-1") {
 					if($allow_null == false) {
 						unset($values[$row['COLUMN_NAME']]);
 					}/* else {
